@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "KambaGo",
+    "slug": "kambago",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "kambago",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F7FAFC",
+    "primaryColor": "#102A43",
+    "android": {
+      "package": "ao.kambago.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O KambaGo usa a tua localização apenas enquanto a aplicação está aberta para encontrar rotas próximas."
+        }
+      ]
+    ]
+  }
+}

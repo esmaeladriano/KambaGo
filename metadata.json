@@ -1,0 +1,6 @@
+{
+  "name": "KambaGo",
+  "description": "Aplicação de partilha de táxi em Luanda, Angola. Mais pessoas. Menos custos. Uma só rota.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
