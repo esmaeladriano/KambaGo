@@ -22,7 +22,9 @@
         {
           "locationWhenInUsePermission": "O KambaGo usa a tua localização apenas enquanto a aplicação está aberta para encontrar rotas próximas."
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-secure-store"
     ]
   }
 }

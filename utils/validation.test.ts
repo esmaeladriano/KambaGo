@@ -5,6 +5,7 @@ import {
   normalizeAngolanPhone,
   registerSchema,
   loginSchema,
+  forgotPasswordSchema,
   otpSchema,
   deleteAccountSchema,
 } from './validation';
@@ -82,6 +83,21 @@ test('otpSchema requires exactly 6 digits and valid Angolan phone', () => {
   );
   assert.equal(
     otpSchema.safeParse({ phone: '923000111', code: '12ab56' }).success,
+    false
+  );
+});
+
+test('forgotPasswordSchema accepts valid email and rejects phone numbers in Stage 1', () => {
+  assert.equal(
+    forgotPasswordSchema.safeParse({ email: 'ana@kambago.ao' }).success,
+    true
+  );
+  assert.equal(
+    forgotPasswordSchema.safeParse({ email: '+244923111222' }).success,
+    false
+  );
+  assert.equal(
+    forgotPasswordSchema.safeParse({ email: '' }).success,
     false
   );
 });

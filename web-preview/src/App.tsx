@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
 import { MotionConfig, motion, AnimatePresence } from 'motion/react';
 import { Home, User, Shield, KeyRound, UserPlus } from 'lucide-react';
-import { ptAO } from '../locales/pt-AO';
-import { DEFAULT_CORRIDOR_CONFIG } from '../constants/config';
-import { useAuthStore, type Stage1Route } from '../store/useAuthStore';
-import { getIntegrationReadiness } from '../services/supabase/client';
-import { fetchMyProfile } from '../services/auth/authService';
+import { ptAO } from '../../locales/pt-AO';
+import { useAuthStore, type Stage1Route } from '../../store/useAuthStore';
+import { getIntegrationReadiness } from '../../services/supabase/client';
+import { fetchMyProfile } from '../../services/auth/authService';
 import { KambaGoLogo } from './components/KambaGoLogo';
 import {
   WelcomeView,
@@ -32,9 +31,11 @@ export default function App() {
   const currentRoute = useAuthStore((s) => s.currentRoute);
   const setRoute = useAuthStore((s) => s.setRoute);
   const setProfile = useAuthStore((s) => s.setProfile);
+  const hydratePreferences = useAuthStore((s) => s.hydratePreferences);
   const readiness = getIntegrationReadiness();
 
   useEffect(() => {
+    void hydratePreferences();
     const params = new URLSearchParams(window.location.search);
     if (params.get('autostart') === '1') {
       setRoute('login');
@@ -47,7 +48,7 @@ export default function App() {
         }
       });
     }
-  }, [readiness.supabaseConfigured, setProfile, setRoute]);
+  }, [hydratePreferences, readiness.supabaseConfigured, setProfile, setRoute]);
 
   const renderScreen = () => {
     switch (currentRoute) {
@@ -164,14 +165,10 @@ export default function App() {
                 <p className="text-sm text-slate-600 leading-relaxed">
                   {ptAO.brand.tagline}
                 </p>
-                <div className="pt-2 border-t border-[#F1F5F9] text-xs text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono-tabular">
-                  <span className="whitespace-nowrap">Desvio {DEFAULT_CORRIDOR_CONFIG.maxDetourMeters} m</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="whitespace-nowrap">Raio {DEFAULT_CORRIDOR_CONFIG.searchRadiusMeters} m</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="whitespace-nowrap">
-                    {DEFAULT_CORRIDOR_CONFIG.minTripFareKz}–{DEFAULT_CORRIDOR_CONFIG.maxTripFareKz} Kz
-                  </span>
+                <div className="pt-2 border-t border-[#F1F5F9] text-xs text-slate-500">
+                  {readiness.supabaseConfigured
+                    ? 'Tarifas e parâmetros do corredor geridos na base de dados (routes e fare_rules).'
+                    : 'Tarifas e parâmetros do corredor carregam da base de dados após configuração do Supabase.'}
                 </div>
               </div>
 
@@ -229,7 +226,9 @@ export default function App() {
                   <li className="flex items-center justify-between gap-2">
                     <span>Expo Notifications</span>
                     <span className="font-semibold text-[#7C4D00]">
-                      {ptAO.common.pendingSetupBadge}
+                      {readiness.notificationsConfigured
+                        ? 'Configurado'
+                        : ptAO.common.pendingSetupBadge}
                     </span>
                   </li>
                 </ul>

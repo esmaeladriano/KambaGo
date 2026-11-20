@@ -11,23 +11,23 @@ import {
   AlertTriangle,
   ArrowLeft,
 } from 'lucide-react';
-import { ptAO } from '../../locales/pt-AO';
-import { useAuthStore } from '../../store/useAuthStore';
+import { ptAO } from '../../../locales/pt-AO';
+import { useAuthStore } from '../../../store/useAuthStore';
 import {
   deleteAccountSchema,
   profileUpdateSchema,
   type DeleteAccountFormValues,
   type ProfileUpdateFormValues,
-} from '../../utils/validation';
+} from '../../../utils/validation';
 import {
   deleteMyAccount,
   signOutUser,
   updateProfilePreferences,
   uploadPrivateAvatar,
-} from '../../services/auth/authService';
-import { getIntegrationReadiness } from '../../services/supabase/client';
-import { getNotificationCapabilityState } from '../../services/notifications/notificationsService';
-import { formatAngolanPhoneDisplay, getAccountStatusCopy } from '../../utils/accountState';
+} from '../../../services/auth/authService';
+import { getIntegrationReadiness } from '../../../services/supabase/client';
+import { getNotificationCapabilityState } from '../../../services/notifications/notificationsService';
+import { formatAngolanPhoneDisplay, getAccountStatusCopy } from '../../../utils/accountState';
 
 export function ProfileView() {
   const profile = useAuthStore((s) => s.profile);

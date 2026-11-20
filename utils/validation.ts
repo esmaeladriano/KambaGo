@@ -76,17 +76,11 @@ export const loginSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  identifier: z
+  email: z
     .string()
     .trim()
     .min(1, ptAO.validation.required)
-    .refine(
-      (val) =>
-        isValidAngolanPhone(val) || z.string().email().safeParse(val).success,
-      {
-        message: ptAO.validation.emailInvalid,
-      }
-    ),
+    .email(ptAO.validation.emailInvalid),
 });
 
 export const otpSchema = z.object({

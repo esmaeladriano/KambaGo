@@ -14,9 +14,11 @@ import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import { registerSchema, type RegisterFormValues } from '../../utils/validation';
 import { registerUser } from '../../services/auth/authService';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const setPendingOtpPhone = useAuthStore((s) => s.setPendingOtpPhone);
   const [feedback, setFeedback] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -35,6 +37,7 @@ export default function RegisterScreen() {
     const result = await registerUser(values);
     setFeedback(result.message);
     if (result.ok) {
+      setPendingOtpPhone(values.phone);
       router.push('/(auth)/verify-otp');
     }
   };
@@ -91,7 +94,7 @@ export default function RegisterScreen() {
       />
       {errors.acceptedLegalTerms && <RNText style={styles.error}>{errors.acceptedLegalTerms.message}</RNText>}
 
-      <RNPressable style={styles.button} disabled={isSubmitting} onPress={handleSubmit(onSubmit)}>
+      <RNPressable style={styles.button} disabled={isSubmitting} onPress={() => void handleSubmit(onSubmit)()}>
         <RNText style={styles.buttonText}>{ptAO.auth.actions.submitRegister}</RNText>
       </RNPressable>
     </RNScrollView>

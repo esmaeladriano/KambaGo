@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { UserProfile } from '../types/auth';
+import { preferencesStorage } from '../services/supabase/deviceStorage';
 
 export type Stage1Route =
   | 'welcome'
@@ -17,6 +18,7 @@ interface AuthState {
   pendingOtpPhone: string;
   profile: UserProfile | null;
   dataSaverEnabled: boolean;
+  preferencesHydrated: boolean;
   statusBanner: {
     kind: 'info' | 'warning' | 'error' | 'success';
     message: string;
@@ -25,6 +27,7 @@ interface AuthState {
   setOnboardingStep: (step: number) => void;
   setPendingOtpPhone: (phone: string) => void;
   setProfile: (profile: UserProfile | null) => void;
+  hydratePreferences: () => Promise<void>;
   setDataSaverEnabled: (enabled: boolean) => void;
   setStatusBanner: (banner: AuthState['statusBanner']) => void;
   clearBanner: () => void;
@@ -32,23 +35,13 @@ interface AuthState {
 
 const STORAGE_KEY_DATA_SAVER = 'kambago_data_saver';
 
-function readInitialDataSaver(): boolean {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      return window.localStorage.getItem(STORAGE_KEY_DATA_SAVER) === 'true';
-    }
-  } catch {
-    // ignore storage errors
-  }
-  return false;
-}
-
 export const useAuthStore = create<AuthState>((set) => ({
   currentRoute: 'welcome',
   onboardingStep: 0,
   pendingOtpPhone: '',
   profile: null,
-  dataSaverEnabled: readInitialDataSaver(),
+  dataSaverEnabled: false,
+  preferencesHydrated: false,
   statusBanner: null,
   setRoute: (currentRoute) => set({ currentRoute, statusBanner: null }),
   setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
@@ -58,14 +51,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       profile,
       dataSaverEnabled: profile ? profile.dataSaverEnabled : state.dataSaverEnabled,
     })),
+  hydratePreferences: async () => {
+    const raw = await preferencesStorage.getItem(STORAGE_KEY_DATA_SAVER);
+    set((state) => ({
+      preferencesHydrated: true,
+      dataSaverEnabled: state.profile
+        ? state.profile.dataSaverEnabled
+        : raw === 'true',
+    }));
+  },
   setDataSaverEnabled: (enabled) => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(STORAGE_KEY_DATA_SAVER, String(enabled));
-      }
-    } catch {
-      // ignore storage errors
-    }
+    void preferencesStorage.setItem(STORAGE_KEY_DATA_SAVER, String(enabled));
     set((state) => ({
       dataSaverEnabled: enabled,
       profile: state.profile

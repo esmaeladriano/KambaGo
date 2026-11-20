@@ -7,9 +7,11 @@ import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import { loginSchema, type LoginFormValues } from '../../utils/validation';
 import { loginUser } from '../../services/auth/authService';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const setProfile = useAuthStore((s) => s.setProfile);
   const [feedback, setFeedback] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -19,7 +21,8 @@ export default function LoginScreen() {
   const onSubmit = async (values: LoginFormValues) => {
     const res = await loginUser(values);
     setFeedback(res.message);
-    if (res.ok) {
+    if (res.ok && res.data) {
+      setProfile(res.data);
       router.replace('/profile');
     }
   };
@@ -47,7 +50,7 @@ export default function LoginScreen() {
       />
       {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
 
-      <Pressable style={styles.button} disabled={isSubmitting} onPress={handleSubmit(onSubmit)}>
+      <Pressable style={styles.button} disabled={isSubmitting} onPress={() => void handleSubmit(onSubmit)()}>
         <Text style={styles.buttonText}>{ptAO.auth.actions.submitLogin}</Text>
       </Pressable>
 

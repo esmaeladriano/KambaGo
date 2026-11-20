@@ -1,28 +1,27 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "target": "ES2022",
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false,
-    "module": "ESNext",
-    "types": ["vite/client"],
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "allowJs": true,
-    "jsx": "react-jsx",
+    "strict": true,
+    "types": ["node"],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+      "@/*": ["./*"]
+    }
   },
-  "exclude": ["dist", "app", "supabase/functions"]
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "constants/**/*.ts",
+    "locales/**/*.ts",
+    "services/**/*.ts",
+    "store/**/*.ts",
+    "types/**/*.ts",
+    "utils/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".expo",
+    "web-preview",
+    "supabase/functions"
+  ]
 }

@@ -11,11 +11,11 @@ export default function ForgotPasswordScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: { identifier: '' },
+    defaultValues: { email: '' },
   });
 
   const onSubmit = async (values: ForgotPasswordFormValues) => {
-    const res = await requestPasswordReset(values.identifier);
+    const res = await requestPasswordReset(values.email);
     setFeedback(res.message);
   };
 
@@ -27,14 +27,21 @@ export default function ForgotPasswordScreen() {
 
       <Controller
         control={control}
-        name="identifier"
+        name="email"
         render={({ field: { onChange, value } }) => (
-          <TextInput style={styles.input} placeholder={ptAO.auth.fields.emailPlaceholder} value={value} onChangeText={onChange} />
+          <TextInput
+            style={styles.input}
+            placeholder={ptAO.auth.fields.emailPlaceholder}
+            value={value}
+            onChangeText={onChange}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
         )}
       />
-      {errors.identifier && <Text style={styles.error}>{errors.identifier.message}</Text>}
+      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
-      <Pressable style={styles.button} disabled={isSubmitting} onPress={handleSubmit(onSubmit)}>
+      <Pressable style={styles.button} disabled={isSubmitting} onPress={() => void handleSubmit(onSubmit)()}>
         <Text style={styles.buttonText}>{ptAO.auth.actions.submitForgot}</Text>
       </Pressable>
     </View>

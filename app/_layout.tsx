@@ -1,11 +1,19 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { KAMBAGO_COLORS } from '../constants/theme';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function RootLayout() {
+  const hydratePreferences = useAuthStore((s) => s.hydratePreferences);
+
+  useEffect(() => {
+    void hydratePreferences();
+  }, [hydratePreferences]);
+
   return (
     <>
-      <StatusBar style="dark" backgroundColor={KAMBAGO_COLORS.background} />
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: KAMBAGO_COLORS.navy },

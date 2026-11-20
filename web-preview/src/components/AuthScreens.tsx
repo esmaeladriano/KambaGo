@@ -1,8 +1,8 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { ptAO } from '../../locales/pt-AO';
-import { useAuthStore } from '../../store/useAuthStore';
+import { ptAO } from '../../../locales/pt-AO';
+import { useAuthStore } from '../../../store/useAuthStore';
 import {
   registerSchema,
   loginSchema,
@@ -12,15 +12,15 @@ import {
   type LoginFormValues,
   type ForgotPasswordFormValues,
   type OtpFormValues,
-} from '../../utils/validation';
+} from '../../../utils/validation';
 import {
   registerUser,
   loginUser,
   requestPasswordReset,
   sendPhoneOtp,
   verifyPhoneOtp,
-} from '../../services/auth/authService';
-import { getIntegrationReadiness } from '../../services/supabase/client';
+} from '../../../services/auth/authService';
+import { getIntegrationReadiness } from '../../../services/supabase/client';
 import { KambaGoLogo } from './KambaGoLogo';
 
 function InlineBanner() {
@@ -230,7 +230,10 @@ export function RegisterView() {
   const selectedRole = watch('role');
 
   const onSubmit = async (values: RegisterFormValues) => {
-    const result = await registerUser(values);
+    const result = await registerUser({
+      ...values,
+      phone: values.phone ?? '',
+    });
     if (result.ok) {
       setPendingOtpPhone(values.phone);
       setStatusBanner({ kind: 'success', message: result.message });
@@ -543,11 +546,11 @@ export function ForgotPasswordView() {
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: { identifier: '' },
+    defaultValues: { email: '' },
   });
 
   const onSubmit = async (values: ForgotPasswordFormValues) => {
-    const result = await requestPasswordReset(values.identifier);
+    const result = await requestPasswordReset(values.email);
     setStatusBanner({
       kind: result.ok
         ? 'success'
@@ -574,18 +577,18 @@ export function ForgotPasswordView() {
       <InlineBanner />
 
       <div className="space-y-1">
-        <label htmlFor="forgot-identifier" className="block text-sm font-medium text-[#102A43]">
-          {ptAO.auth.fields.email} / {ptAO.auth.fields.phone}
+        <label htmlFor="forgot-email" className="block text-sm font-medium text-[#102A43]">
+          {ptAO.auth.fields.emailRecovery}
         </label>
         <input
-          id="forgot-identifier"
-          type="text"
+          id="forgot-email"
+          type="email"
           placeholder={ptAO.auth.fields.emailPlaceholder}
-          {...register('identifier')}
+          {...register('email')}
           className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F7FAFC] text-sm focus:outline-none focus:ring-2 focus:ring-[#16B8A6]"
         />
-        {errors.identifier && (
-          <p className="text-xs text-red-600">{errors.identifier.message}</p>
+        {errors.email && (
+          <p className="text-xs text-red-600">{errors.email.message}</p>
         )}
       </div>
 
@@ -610,6 +613,7 @@ export function ForgotPasswordView() {
 
 export function VerifyOtpView() {
   const pendingOtpPhone = useAuthStore((s) => s.pendingOtpPhone);
+  const setProfile = useAuthStore((s) => s.setProfile);
   const setRoute = useAuthStore((s) => s.setRoute);
   const setStatusBanner = useAuthStore((s) => s.setStatusBanner);
   const readiness = getIntegrationReadiness();
@@ -625,16 +629,23 @@ export function VerifyOtpView() {
   });
 
   const onSubmit = async (values: OtpFormValues) => {
-    const result = await verifyPhoneOtp(values);
+    const result = await verifyPhoneOtp({
+      phone: values.phone ?? '',
+      code: values.code,
+    });
+    if (result.data) {
+      setProfile(result.data);
+    }
     setStatusBanner({
-      kind: result.ok
-        ? 'success'
-        : result.status === 'pending_configuration'
-        ? 'warning'
-        : 'error',
+      kind:
+        result.ok && result.data?.accountStatus === 'ativa'
+          ? 'success'
+          : result.status === 'pending_configuration' || result.ok
+          ? 'warning'
+          : 'error',
       message: result.message,
     });
-    if (result.ok) {
+    if (result.ok && result.data?.accountStatus === 'ativa') {
       setRoute('profile');
     }
   };

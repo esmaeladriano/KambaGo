@@ -68,7 +68,7 @@ export const ptAO = {
     registerSubtitle: 'Registo rápido com dados mínimos para começar a viajar.',
     forgotTitle: 'Recuperar palavra-passe',
     forgotSubtitle:
-      'Indica o e-mail ou telefone associado à tua conta para receber instruções de recuperação.',
+      'Indica o e-mail associado à tua conta para receber instruções de recuperação. (Recuperação por telefone será adicionada numa etapa posterior.)',
     otpTitle: 'Confirmar número por OTP',
     otpSubtitle: 'Introduz o código de 6 dígitos enviado para o teu número.',
     fields: {
@@ -77,6 +77,7 @@ export const ptAO = {
       phone: 'Telefone (+244)',
       phonePlaceholder: '+244 923 000 000',
       email: 'E-mail (opcional para recuperação)',
+      emailRecovery: 'E-mail registado',
       emailPlaceholder: 'nome@exemplo.ao',
       password: 'Palavra-passe',
       passwordPlaceholder: 'Mínimo 8 caracteres',
@@ -114,7 +115,16 @@ export const ptAO = {
       forgotSent: 'Se a conta existir no servidor, receberás as instruções de recuperação.',
       otpPendingConfig:
         'O envio e verificação de OTP estão em estado "configuração pendente" (sem provedor SMS ligado).',
+      otpResent: 'Novo código OTP enviado por SMS.',
       otpSuccess: 'Número verificado com sucesso.',
+      otpSuccessPassengerActive:
+        'Número verificado com sucesso. A tua conta de passageiro está ativa.',
+      otpSuccessDriverPending:
+        'Número verificado com sucesso. A tua conta de motorista aguarda aprovação administrativa.',
+      otpAccountSuspended:
+        'Número verificado, mas a tua conta permanece suspensa. Contacta o suporte.',
+      otpConfirmFailed:
+        'Código validado, mas não foi possível confirmar a ativação da conta no servidor.',
       unauthenticatedTitle: 'Sessão ainda não iniciada',
       unauthenticatedBody:
         'Quando iniciares sessão num projeto Supabase configurado, os teus dados reais aparecem aqui.',
@@ -165,6 +175,7 @@ export const ptAO = {
       description:
         'Sem chaves de projeto configuradas, as notificações permanecem desativadas nas definições.',
       pendingLabel: 'Desativadas (configuração pendente)',
+      readyLabel: 'Projeto Expo configurado (registo de token disponível)',
     },
     inttSection: {
       title: 'Registo regulatório (INTT)',

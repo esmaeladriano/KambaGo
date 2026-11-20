@@ -2,24 +2,38 @@
 
 **Vamos juntos.** — *Mais pessoas. Menos custos. Uma só rota.*
 
-Aplicação de partilha de táxi em Luanda, Angola (corredor inicial configurável: **Zango → Mutamba**), concebida com prioridade para dispositivos Android modestos, ligações móveis fracas e regras de negócio no servidor.
+Aplicação móvel de partilha de táxi em Luanda, Angola (corredor inicial configurável na base de dados: **Zango → Mutamba**), concebida com prioridade para dispositivos Android modestos, ligações móveis fracas e regras de negócio no servidor.
 
 ---
 
-## Estado Atual: Etapa 1 (Autenticação, Perfis e Fundação)
+## Arquitetura do Repositório
 
-Implementado nesta etapa:
-- Identidade visual KambaGo (`#102A43`, `#16B8A6`, `#FFB547`, `#F7FAFC`, `#F1F5F9`) e logótipo SVG em `assets/images/kambago-logo.svg`.
-- Ficheiro único de traduções em português adaptado a Angola (`locales/pt-AO.ts`).
-- Esquemas de validação Zod para telefone `+244 9XX XXX XXX`, registo, login, OTP, recuperação de palavra-passe, perfil e exclusão de conta (`utils/validation.ts`).
+- **Raiz (`/`)**: Aplicação móvel principal em **React Native + Expo + Expo Router** (`app/`, `constants/`, `locales/`, `services/`, `store/`, `types/`, `utils/`, `supabase/`).
+- **`web-preview/`**: Pré-visualização web interativa em Vite + React (`web-preview/package.json`) para inspeção rápida no navegador (não faz parte do build nativo Android).
+
+---
+
+## Matriz de Estado da Etapa 1 (Autenticação, Perfis e Fundação)
+
+### O que funciona de facto
+- Estrutura Expo + Expo Router na raiz com verificação TypeScript estrita (`npm run lint`) sobre `app/` e módulos partilhados.
+- Traduções centralizadas em português adaptado a Angola (`locales/pt-AO.ts`).
+- Validação Zod (`utils/validation.ts`) para telefone `+244 9XX XXX XXX`, registo, login, OTP de 6 dígitos, recuperação por e-mail, atualização de perfil e eliminação de conta.
 - Máquina de estados de conta (`pendente`, `ativa`, `suspensa`) em `utils/accountState.ts`.
-- Camadas de abstração:
-  - `services/supabase/client.ts` (sem chaves fixas; mostra **"Configuração pendente"** quando faltam variáveis).
-  - `services/sms/smsProvider.ts` (provedor SMS configurável para OTP).
-  - `services/maps/mapsProvider.ts` (abstração pronta para trocar Google Maps por Mapbox na Etapa 3).
-  - `services/notifications/notificationsService.ts` (Expo Notifications desativadas enquanto sem chaves).
-- Base de dados Supabase (`supabase/migrations/001_stage1_auth_profiles.sql`): tabelas `profiles`, `audit_logs`, `routes`, RLS, bucket privado `profile-avatars`, função `request_account_deletion()`, seed de desenvolvimento (`supabase/seed/001_dev_corridors.sql`), Edge Function `send-otp` e testes SQL (`supabase/tests/001_rls_profiles.sql`).
-- Pré-visualização web interativa da Etapa 1 (Vite + React) e rotas Expo Router (`app/`) prontas para o build Android.
+- Fluxo único de OTP SMS via Supabase Auth (`signUp` + `auth.resend` + `auth.verifyOtp`) ligado à RPC `confirm_phone_verification()` (`003_phone_verification_rpc.sql`), que ativa apenas passageiros após confirmação real no servidor e mantém motoristas em `pendente` até aprovação administrativa.
+- Migrations SQL consolidadas (`001` a `004`) com RLS rigorosa em `profiles`, `audit_logs`, `routes` e `fare_rules`, armazenamento de fotos em bucket privado `profile-avatars` (`avatar_path` + URL assinada), e exclusão de conta (`request_account_deletion()`).
+- Persistência local segura no dispositivo: `expo-secure-store` para tokens de sessão do Supabase Auth (`services/supabase/deviceStorage.native.ts`) e `@react-native-async-storage/async-storage` para a preferência não sensível `dataSaverEnabled`.
+
+### Pendente de configuração externa
+- **Supabase (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`)**: enquanto não configurados em `.env`, as ações de servidor devolvem estado `pending_configuration` e a UI mostra **"Configuração pendente"**.
+- **Provedor SMS no Supabase Auth (`EXPO_PUBLIC_SMS_PROVIDER`)**: permanece `"pending"` até ligar Twilio, Africa's Talking ou outro provedor suportado no painel do Supabase Auth.
+- **Notificações Push (`EXPO_PUBLIC_EXPO_PROJECT_ID`)**: permanecem desativadas enquanto sem ID de projeto EAS/Expo configurado.
+- **Mapas (`EXPO_PUBLIC_MAPS_PROVIDER`, `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` / `EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN`)**: camada de abstração pronta (`services/maps/mapsProvider.ts`), implementação concreta pendente da Etapa 3.
+- **Registo regulatório INTT e textos legais**: marcados como `"Pendente de confirmação"` / `"Rascunho a validar por advogado"`.
+
+### Por fazer (etapas seguintes)
+- **Recuperação de palavra-passe por telefone**: na Etapa 1 a recuperação suporta **apenas e-mail** (`resetPasswordForEmail`). A recuperação por telefone com ecrã pós-OTP para definir nova senha fica para etapa posterior.
+- **Etapa 2 em diante**: pesquisa/correspondência de viagens, cálculo de preço partilhado, pagamentos, chat/notificações em tempo real e aprovação administrativa de motoristas no painel.
 
 ---
 
@@ -33,35 +47,46 @@ cp .env.example .env
 
 - `EXPO_PUBLIC_SUPABASE_URL` / `VITE_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_SMS_PROVIDER` (`pending` até ativar SMS no Supabase Auth)
+- `EXPO_PUBLIC_EXPO_PROJECT_ID` (opcional, para ativar registo de Expo Push Notifications)
 - `EXPO_PUBLIC_MAPS_PROVIDER` (`google` ou `mapbox`)
 - `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` ou `EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN`
 
-Segredos de servidor (apenas nas Supabase Edge Functions, nunca no cliente):
+Segredos de servidor (apenas em ambiente administrativo seguro, nunca no cliente):
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `SMS_PROVIDER`, `SMS_PROVIDER_API_KEY`, `SMS_PROVIDER_API_SECRET`, `SMS_SENDER_ID`
 
 ---
 
 ## Comandos
 
-### Pré-visualização Web & Testes Unitários (Ambiente Atual)
+### Aplicação Expo (Raiz `/`)
 ```bash
 npm install
-npm run dev           # Arranque na porta 3000
-npm run build         # Verificação de build
-npm run lint          # Verificação TypeScript
-npx --yes tsx --test utils/*.test.ts services/**/*.test.ts
+npm run lint          # Verificação TypeScript (inclui app/ e módulos partilhados)
+npm test              # Testes unitários TypeScript (node:test via tsx)
+npm run start         # Expo dev server
+npm run build         # Exportação Android (expo export --platform android)
 ```
 
-### Projeto Nativo Android (Expo / EAS Build local)
+### Pré-visualização Web (`web-preview/`)
 ```bash
-npx expo install expo-router expo-status-bar expo-constants expo-linking \
-  react-native-safe-area-context react-native-screens react-native-reanimated \
-  react-native-gesture-handler expo-notifications expo-image-picker expo-location \
-  react-native-maps react-native-svg
+npm --prefix web-preview install
+npm --prefix web-preview run dev     # Arranque na porta 3000
+npm --prefix web-preview run lint    # Verificação TypeScript da pré-visualização web
+npm --prefix web-preview run build   # Build Vite da pré-visualização web
 ```
 
 ### Estimativa de Custos de Mapas por Viagem (Referência)
-- **Autocompletar**: debounce de `500 ms` e mínimo de `3` caracteres (máximo ~2–4 pedidos por pesquisa de origem/destino).
+- **Autocompletar**: debounce de `500 ms` e mínimo de `3` caracteres (`TECHNICAL_CONFIG`).
 - **Cálculo de rota**: `1` pedido por viagem criada, guardado em cache de rotas para reutilização no mesmo corredor.
-- **Atualização de posição do motorista**: intervalo fixo de `12 s` (nunca contínuo); numa viagem de `40 min`, equivale a ~`200` atualizações de coordenadas na base de dados/Realtime sem chamadas de API de mapas pagas.
+- **Atualização de posição do motorista**: intervalo fixo de `12 s` (`TECHNICAL_CONFIG.driverLocationIntervalMs`).
+
+---
+
+## Passos Manuais para Ligar ao Supabase
+
+1. Criar projeto Supabase (ambiente de desenvolvimento) e ativar **Phone Auth** em *Authentication → Providers → Phone*.
+2. Configurar o provedor SMS (ex.: Twilio ou Africa's Talking) nas definições do Supabase Auth.
+3. Aplicar as migrations por ordem (`001_stage1_auth_profiles.sql` até `004_fare_rules.sql`) e, em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
+4. Promover o primeiro administrador via SQL Editor com `role = 'admin'` e `account_status = 'ativa'`.
+5. Criar `.env` local a partir de `.env.example` (nunca versionar `.env`).

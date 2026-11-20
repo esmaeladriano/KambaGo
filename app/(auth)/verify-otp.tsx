@@ -2,21 +2,32 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'expo-router';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import { otpSchema, type OtpFormValues } from '../../utils/validation';
 import { sendPhoneOtp, verifyPhoneOtp } from '../../services/auth/authService';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function VerifyOtpScreen() {
+  const router = useRouter();
+  const pendingOtpPhone = useAuthStore((s) => s.pendingOtpPhone);
+  const setProfile = useAuthStore((s) => s.setProfile);
   const [feedback, setFeedback] = useState<string | null>(null);
   const { control, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<OtpFormValues>({
     resolver: zodResolver(otpSchema),
-    defaultValues: { phone: '+244 ', code: '' },
+    defaultValues: { phone: pendingOtpPhone || '+244 ', code: '' },
   });
 
   const onSubmit = async (values: OtpFormValues) => {
     const res = await verifyPhoneOtp(values);
     setFeedback(res.message);
+    if (res.ok && res.data) {
+      setProfile(res.data);
+      if (res.data.accountStatus === 'ativa') {
+        router.replace('/profile');
+      }
+    }
   };
 
   const handleResend = async () => {
@@ -48,7 +59,7 @@ export default function VerifyOtpScreen() {
       />
       {errors.code && <Text style={styles.error}>{errors.code.message}</Text>}
 
-      <Pressable style={styles.button} disabled={isSubmitting} onPress={handleSubmit(onSubmit)}>
+      <Pressable style={styles.button} disabled={isSubmitting} onPress={() => void handleSubmit(onSubmit)()}>
         <Text style={styles.buttonText}>{ptAO.auth.actions.submitOtp}</Text>
       </Pressable>
       <Pressable onPress={handleResend}>

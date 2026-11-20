@@ -61,9 +61,6 @@ class UnconfiguredMapsProvider implements MapsProvider {
 
 export function getMapsProvider(): MapsProvider {
   const config = readAppConfig();
-  if (!config.mapsApiKeyConfigured) {
-    return new UnconfiguredMapsProvider(config.mapsProvider);
-  }
-  // A implementação concreta de Google Maps / Mapbox será ligada na Etapa 3
+  // pendente Etapa 3: ligar implementação concreta de Google Maps / Mapbox quando a chave estiver ativa
   return new UnconfiguredMapsProvider(config.mapsProvider);
 }

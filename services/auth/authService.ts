@@ -8,8 +8,8 @@ import type {
 } from '../../types/auth';
 import type { DbProfileRow, PublicProfileInfoRow } from '../../types/database';
 import { normalizeAngolanPhone } from '../../utils/validation';
+import { readAppConfig } from '../../constants/config';
 import { getSupabaseClient } from '../supabase/client';
-import { createSmsProvider } from '../sms/smsProvider';
 
 const AVATAR_BUCKET = 'profile-avatars';
 const SIGNED_URL_TTL_SECONDS = 300;
@@ -27,7 +27,7 @@ export function mapDbProfileToUserProfile(
     accountStatus: row.account_status,
     phoneVerified: row.phone_verified,
     avatarPath: row.avatar_path,
-    avatarSignedUrl: avatarSignedUrl ?? row.avatar_url,
+    avatarSignedUrl,
     dataSaverEnabled: row.data_saver_enabled,
     inttRegistrationNumber: row.intt_registration_number,
     inttVerificationStatus: row.intt_verification_status,
@@ -145,8 +145,17 @@ export async function loginUser(
 }
 
 export async function requestPasswordReset(
-  identifier: string
+  email: string
 ): Promise<AuthActionResult> {
+  const trimmedEmail = email.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    return {
+      ok: false,
+      status: 'validation_error',
+      message: ptAO.validation.emailInvalid,
+    };
+  }
+
   const supabase = getSupabaseClient();
   if (!supabase) {
     return {
@@ -156,12 +165,7 @@ export async function requestPasswordReset(
     };
   }
 
-  if (!identifier.includes('@')) {
-    const sms = createSmsProvider();
-    return sms.sendOtp(normalizeAngolanPhone(identifier));
-  }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(identifier.trim());
+  const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
   if (error) {
     return {
       ok: false,
@@ -177,27 +181,44 @@ export async function requestPasswordReset(
   };
 }
 
-export async function sendPhoneOtp(phone: string): Promise<AuthActionResult> {
-  const sms = createSmsProvider();
-  return sms.sendOtp(normalizeAngolanPhone(phone));
+function isSmsProviderUnconfiguredError(message: string): boolean {
+  return /sms|phone provider|unsupported phone provider|twilio|messagebird|vonage/i.test(
+    message
+  );
 }
 
-export async function verifyPhoneOtp(
-  payload: OtpVerifyPayload
-): Promise<AuthActionResult> {
+export async function sendPhoneOtp(phone: string): Promise<AuthActionResult> {
   const supabase = getSupabaseClient();
-  const sms = createSmsProvider();
-  if (!supabase || sms.providerName === 'pending') {
-    return sms.verifyOtp(normalizeAngolanPhone(payload.phone), payload.code);
+  const config = readAppConfig();
+  if (!supabase || !config.isSmsConfigured) {
+    return {
+      ok: false,
+      status: 'pending_configuration',
+      message: ptAO.setupStatus.smsMissing,
+    };
   }
 
-  const { error } = await supabase.auth.verifyOtp({
-    phone: normalizeAngolanPhone(payload.phone),
-    token: payload.code,
+  return sendPhoneOtpWithClient(supabase, phone);
+}
+
+export async function sendPhoneOtpWithClient(
+  supabase: SupabaseAuthLike,
+  phone: string
+): Promise<AuthActionResult> {
+  const normalizedPhone = normalizeAngolanPhone(phone);
+  const { error } = await supabase.auth.resend({
     type: 'sms',
+    phone: normalizedPhone,
   });
 
   if (error) {
+    if (isSmsProviderUnconfiguredError(error.message)) {
+      return {
+        ok: false,
+        status: 'pending_configuration',
+        message: ptAO.setupStatus.smsMissing,
+      };
+    }
     return {
       ok: false,
       status: 'error',
@@ -208,7 +229,97 @@ export async function verifyPhoneOtp(
   return {
     ok: true,
     status: 'success',
-    message: ptAO.auth.feedback.otpSuccess,
+    message: ptAO.auth.feedback.otpResent,
+  };
+}
+
+export function getOtpConfirmationFeedback(
+  profile: Pick<UserProfile, 'accountStatus' | 'phoneVerified' | 'role'>
+): string {
+  if (profile.accountStatus === 'suspensa') {
+    return ptAO.auth.feedback.otpAccountSuspended;
+  }
+  if (profile.accountStatus === 'ativa' && profile.phoneVerified) {
+    return profile.role === 'passenger'
+      ? ptAO.auth.feedback.otpSuccessPassengerActive
+      : ptAO.auth.feedback.otpSuccess;
+  }
+  if (profile.role === 'driver') {
+    return ptAO.auth.feedback.otpSuccessDriverPending;
+  }
+  return ptAO.auth.feedback.otpConfirmFailed;
+}
+
+export async function verifyPhoneOtp(
+  payload: OtpVerifyPayload
+): Promise<AuthActionResult<UserProfile>> {
+  const supabase = getSupabaseClient();
+  const config = readAppConfig();
+  if (!supabase || !config.isSmsConfigured) {
+    return {
+      ok: false,
+      status: 'pending_configuration',
+      message: ptAO.auth.feedback.otpPendingConfig,
+    };
+  }
+
+  return verifyPhoneOtpWithClient(supabase, payload);
+}
+
+type SupabaseAuthLike = NonNullable<ReturnType<typeof getSupabaseClient>>;
+
+export async function verifyPhoneOtpWithClient(
+  supabase: SupabaseAuthLike,
+  payload: OtpVerifyPayload
+): Promise<AuthActionResult<UserProfile>> {
+  const normalizedPhone = normalizeAngolanPhone(payload.phone);
+
+  const { error: otpError } = await supabase.auth.verifyOtp({
+    phone: normalizedPhone,
+    token: payload.code,
+    type: 'sms',
+  });
+
+  if (otpError) {
+    return {
+      ok: false,
+      status: 'error',
+      message: otpError.message,
+    };
+  }
+
+  const { data: confirmedRow, error: confirmError } = await supabase
+    .rpc('confirm_phone_verification')
+    .single<DbProfileRow>();
+
+  if (confirmError || !confirmedRow) {
+    return {
+      ok: false,
+      status: 'error',
+      message: confirmError?.message ?? ptAO.auth.feedback.otpConfirmFailed,
+    };
+  }
+
+  const refreshed = await fetchMyProfileWithClient(supabase);
+  const confirmedProfile =
+    refreshed.ok && refreshed.data
+      ? refreshed.data
+      : mapDbProfileToUserProfile(confirmedRow);
+
+  if (!confirmedProfile.phoneVerified) {
+    return {
+      ok: false,
+      status: 'error',
+      message: ptAO.auth.feedback.otpConfirmFailed,
+      data: confirmedProfile,
+    };
+  }
+
+  return {
+    ok: true,
+    status: 'success',
+    message: getOtpConfirmationFeedback(confirmedProfile),
+    data: confirmedProfile,
   };
 }
 
@@ -222,6 +333,12 @@ export async function fetchMyProfile(): Promise<AuthActionResult<UserProfile>> {
     };
   }
 
+  return fetchMyProfileWithClient(supabase);
+}
+
+export async function fetchMyProfileWithClient(
+  supabase: SupabaseAuthLike
+): Promise<AuthActionResult<UserProfile>> {
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData.user) {
     return {

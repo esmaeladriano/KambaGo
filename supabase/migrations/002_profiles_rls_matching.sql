@@ -1,12 +1,18 @@
--- KambaGo - Migration 002: RLS rigorosa em profiles + projeção pública segura para compatibilidade
--- Garante que cada utilizador lê apenas os seus próprios dados completos em public.profiles,
--- evitando recursão de políticas e impedindo exposição de PII (telefone, e-mail, tokens).
--- Utilizadores autenticados acedem apenas à informação pública básica via view/RPC dedicada.
+-- KambaGo - Migration 002: RLS rigorosa em profiles e RPC segura de correspondência
+-- Regras:
+--   1. Utilizadores autenticados leem/atualizam/eliminam apenas a sua própria linha em public.profiles.
+--   2. Administradores (via public.is_admin() SECURITY DEFINER) leem todos os perfis sem recursão RLS.
+--   3. Nenhuma política public_read_profiles nem view SECURITY DEFINER expõe outros perfis.
+--   4. Correspondência de viagens usa exclusivamente get_public_profiles_for_matching(uuid[]),
+--      que devolve apenas (id, full_name, avatar_path) de contas com account_status = 'ativa'.
 
--- 1. Garantir RLS ativa (e forçada para não-owners) na tabela profiles
 alter table public.profiles enable row level security;
 
--- 2. Função auxiliar SECURITY DEFINER para verificar papel admin sem recursão RLS em profiles
+-- Remover coluna/objetos legados caso existam numa base anterior
+drop view if exists public.profile_public_info;
+alter table public.profiles drop column if exists avatar_url;
+
+-- 1. Função auxiliar SECURITY DEFINER para verificar papel admin sem recursão RLS em profiles
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -25,20 +31,25 @@ $$;
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to authenticated;
 
--- 3. Limpar e recriar políticas SELECT/INSERT/UPDATE em public.profiles
+-- 2. Limpar políticas anteriores e recriar políticas estritas em public.profiles
+drop policy if exists "public_read_profiles" on public.profiles;
+drop policy if exists "user_manage_own_profile" on public.profiles;
 drop policy if exists "profiles_select_own" on public.profiles;
+drop policy if exists "profiles_select_admin" on public.profiles;
+drop policy if exists "profiles_insert_own" on public.profiles;
+drop policy if exists "profiles_update_own" on public.profiles;
+drop policy if exists "profiles_delete_own" on public.profiles;
+
 create policy "profiles_select_own"
 on public.profiles for select
 to authenticated
 using (auth.uid() = id);
 
-drop policy if exists "profiles_select_admin" on public.profiles;
 create policy "profiles_select_admin"
 on public.profiles for select
 to authenticated
 using (public.is_admin());
 
-drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"
 on public.profiles for insert
 to authenticated
@@ -49,16 +60,13 @@ with check (
   and phone_verified = false
 );
 
--- Função auxiliar para impedir escalamento de privilégios no UPDATE do próprio perfil
+-- 3. Trigger SECURITY INVOKER para impedir escalamento de privilégios pelo cliente
 create or replace function public.prevent_profile_privilege_escalation()
 returns trigger
 language plpgsql
-security definer
-set search_path = public
 as $$
 begin
-  -- Só administradores (ou triggers/funções internas sem auth.uid() de cliente) podem alterar estes campos
-  if auth.uid() is not null and not public.is_admin() then
+  if current_user in ('authenticated', 'anon') and not public.is_admin() then
     if new.role is distinct from old.role then
       raise exception 'Não é permitido alterar o papel da conta diretamente.';
     end if;
@@ -78,36 +86,40 @@ create trigger trg_profiles_guard_fields
 before update on public.profiles
 for each row execute function public.prevent_profile_privilege_escalation();
 
-drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own"
 on public.profiles for update
 to authenticated
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
--- 4. Projeção pública segura para compatibilidade (apenas utilizadores autenticados)
--- Expõe apenas: id, full_name, role, account_status, avatar_path (sem telefone, e-mail, tokens ou consentimentos).
-create or replace view public.profile_public_info as
-select
-  p.id,
-  p.full_name,
-  p.role,
-  p.account_status,
-  p.avatar_path
-from public.profiles p
-where auth.uid() is not null
-  and p.account_status = 'ativa';
+create policy "profiles_delete_own"
+on public.profiles for delete
+to authenticated
+using (auth.uid() = id);
 
-revoke all on public.profile_public_info from public, anon;
-grant select on public.profile_public_info to authenticated;
+-- 4. RPC segura para o próprio utilizador obter os seus dados privados completos (id = auth.uid())
+create or replace function public.get_my_profile()
+returns setof public.profiles
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.*
+  from public.profiles p
+  where auth.uid() is not null
+    and p.id = auth.uid();
+$$;
 
--- 5. Função RPC tipada para obter perfis públicos durante a compatibilidade de viagens
-create or replace function public.get_public_profiles_for_matching(p_profile_ids uuid[])
+revoke all on function public.get_my_profile() from public, anon;
+grant execute on function public.get_my_profile() to authenticated;
+
+-- 5. RPC segura para correspondência de viagens: apenas contas 'ativa' e apenas (id, full_name, avatar_path)
+drop function if exists public.get_public_profiles_for_matching(uuid[]);
+create function public.get_public_profiles_for_matching(p_profile_ids uuid[])
 returns table (
   id uuid,
   full_name text,
-  role public.user_role,
-  account_status public.account_status,
   avatar_path text
 )
 language sql
@@ -118,8 +130,6 @@ as $$
   select
     p.id,
     p.full_name,
-    p.role,
-    p.account_status,
     p.avatar_path
   from public.profiles p
   where auth.uid() is not null
@@ -130,7 +140,7 @@ $$;
 revoke all on function public.get_public_profiles_for_matching(uuid[]) from public, anon;
 grant execute on function public.get_public_profiles_for_matching(uuid[]) to authenticated;
 
--- Atualizar também policy de audit_logs para usar public.is_admin() sem recursão
+-- 6. Política de audit_logs usando public.is_admin() sem recursão
 drop policy if exists "audit_logs_select_own" on public.audit_logs;
 create policy "audit_logs_select_own"
 on public.audit_logs for select

@@ -8,22 +8,12 @@ export interface AppRuntimeConfig {
   mapsApiKeyConfigured: boolean;
   smsProvider: SmsProviderName;
   isSmsConfigured: boolean;
+  expoProjectId: string;
+  isNotificationsConfigured: boolean;
   appEnv: 'development' | 'staging' | 'production';
 }
 
-export const DEFAULT_CORRIDOR_CONFIG = {
-  code: 'zango-mutamba',
-  originName: 'Zango',
-  destinationName: 'Mutamba',
-  maxDetourMeters: 1000,
-  destinationToleranceMeters: 500,
-  searchRadiusMeters: 2000,
-  minTripFareKz: 1000,
-  maxTripFareKz: 12000,
-  freeCancelMinutesAfterBooking: 5,
-  freeCancelMinutesBeforePickup: 15,
-  lateCancelFeeKz: 200,
-  driverCancelPassengerFeeKz: 0,
+export const TECHNICAL_CONFIG = {
   driverLocationIntervalMs: 12000,
   autocompleteDebounceMs: 500,
   autocompleteMinChars: 3,
@@ -61,9 +51,11 @@ export function readAppConfig(): AppRuntimeConfig {
       ? readEnvValue(['EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN', 'VITE_MAPBOX_PUBLIC_TOKEN'])
       : readEnvValue(['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY', 'VITE_GOOGLE_MAPS_API_KEY']);
 
-  const rawSmsProvider = readEnvValue(['EXPO_PUBLIC_SMS_PROVIDER', 'SMS_PROVIDER']);
+  const rawSmsProvider = readEnvValue(['EXPO_PUBLIC_SMS_PROVIDER', 'VITE_SMS_PROVIDER']);
   const smsProvider: SmsProviderName =
     rawSmsProvider === 'twilio' || rawSmsProvider === 'africastalking' ? rawSmsProvider : 'pending';
+
+  const expoProjectId = readEnvValue(['EXPO_PUBLIC_EXPO_PROJECT_ID', 'VITE_EXPO_PROJECT_ID']);
 
   const rawEnv = readEnvValue(['EXPO_PUBLIC_APP_ENV', 'NODE_ENV']);
   const appEnv =
@@ -77,6 +69,8 @@ export function readAppConfig(): AppRuntimeConfig {
     mapsApiKeyConfigured: Boolean(mapsKey),
     smsProvider,
     isSmsConfigured: smsProvider !== 'pending',
+    expoProjectId,
+    isNotificationsConfigured: Boolean(expoProjectId),
     appEnv,
   };
 }

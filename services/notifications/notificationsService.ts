@@ -1,3 +1,4 @@
+import { readAppConfig } from '../../constants/config';
 import { ptAO } from '../../locales/pt-AO';
 
 export interface NotificationCapabilityState {
@@ -7,9 +8,12 @@ export interface NotificationCapabilityState {
 }
 
 export function getNotificationCapabilityState(): NotificationCapabilityState {
+  const config = readAppConfig();
   return {
-    enabled: false,
-    reason: ptAO.profile.smsNotifications.pendingLabel,
+    enabled: config.isNotificationsConfigured,
+    reason: config.isNotificationsConfigured
+      ? ptAO.profile.smsNotifications.readyLabel
+      : ptAO.profile.smsNotifications.pendingLabel,
     token: null,
   };
 }
