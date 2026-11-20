@@ -1,6 +1,6 @@
--- Testes SQL / pgTAP da Migration 20231027000000: RLS, public_read_profiles por coluna e políticas próprias
+-- Testes SQL / pgTAP da Migration 20231027000000: RLS, public_read_profiles e user_manage_own_profile
 begin;
-select plan(8);
+select plan(6);
 
 select ok(
   (select relrowsecurity from pg_class where oid = 'public.profiles'::regclass),
@@ -10,7 +10,7 @@ select ok(
 select has_column('public', 'profiles', 'avatar_url', 'Coluna avatar_url existe em profiles');
 select has_function('public', 'get_my_profile', 'RPC get_my_profile existe');
 
--- Verificar políticas criadas em public.profiles
+-- Verificar políticas exatas em public.profiles
 select ok(
   exists (
     select 1 from pg_policies
@@ -21,23 +21,9 @@ select ok(
 select ok(
   exists (
     select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'profiles' and policyname = 'profiles_select_own'
+    where schemaname = 'public' and tablename = 'profiles' and policyname = 'user_manage_own_profile'
   ),
-  'Política profiles_select_own existe'
-);
-select ok(
-  exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'profiles' and policyname = 'profiles_update_own'
-  ),
-  'Política profiles_update_own existe'
-);
-select ok(
-  exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'profiles' and policyname = 'profiles_delete_own'
-  ),
-  'Política profiles_delete_own existe'
+  'Política user_manage_own_profile existe'
 );
 
 -- Testar SELECT público limitado por coluna, bloqueio de phone, e UPDATE/DELETE próprios
@@ -110,7 +96,7 @@ begin
   reset role;
 end $$;
 
-select pass('Políticas public_read_profiles, SELECT/UPDATE/DELETE próprios e proteção por coluna verificadas');
+select pass('Políticas public_read_profiles e user_manage_own_profile verificadas');
 
 select * from finish();
 rollback;

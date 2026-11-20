@@ -1,9 +1,8 @@
 -- KambaGo - Migration: 20231027000000_create_profiles_rls.sql
--- 1) Garante que a tabela public.profiles tem RLS ativado.
--- 2) Adiciona a política 'public_read_profiles' aliada a permissões por coluna para que
---    utilizadores autenticados possam fazer SELECT apenas de (id, full_name, avatar_url).
--- 3) Adiciona políticas para que cada utilizador possa fazer SELECT, UPDATE e DELETE
---    apenas na sua própria linha (auth.uid() = id).
+-- 1) Ativa RLS na tabela profiles: ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- 2) Política 'public_read_profiles': permite SELECT apenas nas colunas (id, full_name, avatar_url)
+--    a utilizadores autenticados através de permissões por coluna.
+-- 3) Política 'user_manage_own_profile': permite SELECT, UPDATE e DELETE na linha onde id = auth.uid().
 
 alter table public.profiles
   add column if not exists avatar_url text;
@@ -11,8 +10,7 @@ alter table public.profiles
 -- 1. Ativar RLS na tabela profiles
 alter table public.profiles enable row level security;
 
--- 2. Permissões explícitas por coluna para a role authenticated
--- Revoga acesso amplo e permite SELECT direto apenas nas colunas públicas (id, full_name, avatar_url)
+-- 2. Permissões por coluna para a role authenticated (sem INSERT direto, gerido por trigger SECURITY DEFINER)
 grant usage on schema public to authenticated;
 revoke all on public.profiles from public, anon, authenticated;
 grant select (id, full_name, avatar_url) on public.profiles to authenticated;
@@ -20,39 +18,31 @@ grant update (full_name, email, avatar_path, avatar_url, data_saver_enabled, int
 grant delete on public.profiles to authenticated;
 grant select, insert, update, delete on public.profiles to service_role;
 
--- 3. Política 'public_read_profiles': leitura pública básica para utilizadores autenticados
+-- Limpar políticas anteriores para manter apenas as políticas definidas abaixo
+drop policy if exists "profiles_select_admin" on public.profiles;
+drop policy if exists "profiles_select_own" on public.profiles;
+drop policy if exists "profiles_insert_own" on public.profiles;
+drop policy if exists "profiles_update_own" on public.profiles;
+drop policy if exists "profiles_delete_own" on public.profiles;
 drop policy if exists "public_read_profiles" on public.profiles;
+drop policy if exists "user_manage_own_profile" on public.profiles;
+
+-- 3. Política 'public_read_profiles': SELECT de (id, full_name, avatar_url) para utilizadores autenticados
 create policy "public_read_profiles"
 on public.profiles
 for select
 to authenticated
 using (auth.uid() is not null);
 
--- 4. Políticas individuais por utilizador (auth.uid() = id)
-drop policy if exists "profiles_select_admin" on public.profiles;
-drop policy if exists "profiles_select_own" on public.profiles;
-create policy "profiles_select_own"
+-- 4. Política 'user_manage_own_profile': SELECT, UPDATE e DELETE apenas na própria linha (id = auth.uid())
+create policy "user_manage_own_profile"
 on public.profiles
-for select
+for all
 to authenticated
-using (auth.uid() = id);
+using (id = auth.uid())
+with check (id = auth.uid());
 
-drop policy if exists "profiles_update_own" on public.profiles;
-create policy "profiles_update_own"
-on public.profiles
-for update
-to authenticated
-using (auth.uid() = id)
-with check (auth.uid() = id);
-
-drop policy if exists "profiles_delete_own" on public.profiles;
-create policy "profiles_delete_own"
-on public.profiles
-for delete
-to authenticated
-using (auth.uid() = id);
-
--- 5. RPC segura para o próprio utilizador obter os seus dados privados completos (auth.uid() = id)
+-- 5. RPC segura para o próprio utilizador obter os seus dados privados completos (id = auth.uid())
 create or replace function public.get_my_profile()
 returns setof public.profiles
 language sql
