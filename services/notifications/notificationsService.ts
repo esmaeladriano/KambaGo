@@ -12,8 +12,8 @@ export function getNotificationCapabilityState(): NotificationCapabilityState {
   return {
     enabled: config.isNotificationsConfigured,
     reason: config.isNotificationsConfigured
-      ? ptAO.profile.smsNotifications.readyLabel
-      : ptAO.profile.smsNotifications.pendingLabel,
+      ? ptAO.profile.notifications.readyLabel
+      : ptAO.profile.notifications.pendingLabel,
     token: null,
   };
 }

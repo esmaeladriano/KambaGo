@@ -35,7 +35,6 @@ export interface AuthActionResult<T = void> {
 
 export interface RegisterPayload {
   fullName: string;
-  phone?: string;
   email: string;
   password: string;
   role: 'passenger' | 'driver';

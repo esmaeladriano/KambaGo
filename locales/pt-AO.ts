@@ -177,7 +177,7 @@ export const ptAO = {
       enabled: 'Ativado',
       disabled: 'Desativado',
     },
-    smsNotifications: {
+    pushNotifications: {
       title: 'Notificações Push (Expo Notifications)',
       description:
         'Sem chaves de projeto configuradas, as notificações permanecem desativadas nas definições.',

@@ -1,5 +1,4 @@
 -- KambaGo - Migration 005: Confirmação de cadastro por código enviado ao e-mail
--- Substitui o fluxo primário de OTP por SMS pela verificação segura de e-mail:
 --   - Adiciona coluna email_verified em public.profiles
 --   - Protege email_verified no trigger prevent_profile_privilege_escalation
 --   - Atualiza handle_new_auth_user para refletir email_confirmed_at na criação

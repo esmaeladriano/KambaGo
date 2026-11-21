@@ -47,14 +47,6 @@ export const registerSchema = z
       .trim()
       .min(3, ptAO.validation.fullNameMin)
       .max(100),
-    phone: z
-      .string()
-      .trim()
-      .transform((val) => (val ? normalizeAngolanPhone(val) : undefined))
-      .refine((val) => !val || /^\+2449\d{8}$/.test(val), {
-        message: ptAO.validation.phoneInvalid,
-      })
-      .optional(),
     email: emailSchema,
     password: z.string().min(8, ptAO.validation.passwordMin),
     confirmPassword: z.string().min(1, ptAO.validation.required),

@@ -41,7 +41,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.label}>{ptAO.profile.smsNotifications.title}</Text>
+        <Text style={styles.label}>{ptAO.profile.pushNotifications.title}</Text>
         <Text style={styles.body}>{notifications.reason}</Text>
       </View>
 

@@ -230,7 +230,6 @@ test('registerUserWithClient normalizes email/phone and detects already-register
   const okClient = makeMockSupabaseClient({ capturedCalls });
   const okRes = await registerUserWithClient(okClient, {
     fullName: 'Joana Mateus',
-    phone: '923111222',
     email: '  Joana@KambaGo.ao ',
     password: 'password123',
     role: 'passenger',
@@ -239,9 +238,9 @@ test('registerUserWithClient normalizes email/phone and detects already-register
   assert.equal(okRes.ok, true);
   assert.equal(okRes.data?.userId, 'user-1');
   assert.equal(okRes.message, ptAO.auth.feedback.registerSuccess);
-  const signUpArgs = (capturedCalls as { signUpArgs?: { email: string; options: { data: { phone: string } } } }).signUpArgs;
+  const signUpArgs = (capturedCalls as { signUpArgs?: { email: string; options: { data: Record<string, unknown> } } }).signUpArgs;
   assert.equal(signUpArgs?.email, 'joana@kambago.ao');
-  assert.equal(signUpArgs?.options.data.phone, '+244923111222');
+  assert.equal('phone' in (signUpArgs?.options.data ?? {}), false);
 
   const emailOnlyRes = await registerUserWithClient(okClient, {
     fullName: 'Joana Mateus',
@@ -258,7 +257,6 @@ test('registerUserWithClient normalizes email/phone and detects already-register
   const duplicateClient = makeMockSupabaseClient({ signUpIdentities: [] });
   const dupRes = await registerUserWithClient(duplicateClient, {
     fullName: 'Joana Mateus',
-    phone: '923111222',
     email: 'joana@kambago.ao',
     password: 'password123',
     role: 'passenger',

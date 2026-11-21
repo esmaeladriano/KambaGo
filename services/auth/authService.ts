@@ -7,7 +7,6 @@ import type {
   UserProfile,
 } from '../../types/auth';
 import type { DbProfileRow, PublicProfileInfoRow } from '../../types/database';
-import { normalizeAngolanPhone } from '../../utils/validation';
 import { getSupabaseClient } from '../supabase/client';
 
 const AVATAR_BUCKET = 'profile-avatars';
@@ -58,9 +57,6 @@ export async function registerUserWithClient(
   supabase: SupabaseAuthLike,
   payload: RegisterPayload
 ): Promise<AuthActionResult<{ userId: string }>> {
-  const normalizedPhone = payload.phone
-    ? normalizeAngolanPhone(payload.phone)
-    : undefined;
   const normalizedEmail = payload.email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
     return {
@@ -78,7 +74,6 @@ export async function registerUserWithClient(
     options: {
       data: {
         full_name: payload.fullName.trim(),
-        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
         role: payload.role,
         consent_terms_at: nowIso,
         consent_privacy_at: nowIso,

@@ -37,27 +37,10 @@ test('registerSchema requires email, legal consent, and matching password withou
   assert.equal(emailOnlyValid.success, true);
   if (emailOnlyValid.success) {
     assert.equal(emailOnlyValid.data.email, 'manuel@kambago.ao');
-    assert.equal(emailOnlyValid.data.phone, undefined);
-  }
-
-  const withPhoneValid = registerSchema.safeParse({
-    fullName: 'Manuel Domingos',
-    phone: '923456789',
-    email: '  Manuel@KambaGo.ao ',
-    password: 'segredo123',
-    confirmPassword: 'segredo123',
-    role: 'passenger',
-    acceptedLegalTerms: true,
-  });
-  assert.equal(withPhoneValid.success, true);
-  if (withPhoneValid.success) {
-    assert.equal(withPhoneValid.data.phone, '+244923456789');
-    assert.equal(withPhoneValid.data.email, 'manuel@kambago.ao');
   }
 
   const missingEmail = registerSchema.safeParse({
     fullName: 'Manuel Domingos',
-    phone: '923456789',
     email: '',
     password: 'segredo123',
     confirmPassword: 'segredo123',
@@ -68,7 +51,6 @@ test('registerSchema requires email, legal consent, and matching password withou
 
   const missingConsent = registerSchema.safeParse({
     fullName: 'Manuel Domingos',
-    phone: '923456789',
     email: 'manuel@kambago.ao',
     password: 'segredo123',
     confirmPassword: 'segredo123',
@@ -79,7 +61,6 @@ test('registerSchema requires email, legal consent, and matching password withou
 
   const mismatch = registerSchema.safeParse({
     fullName: 'Manuel Domingos',
-    phone: '923456789',
     email: 'manuel@kambago.ao',
     password: 'segredo123',
     confirmPassword: 'outra',
@@ -168,6 +149,7 @@ test('account state rules gate trips and driver approval properly after email ve
   assert.equal(resolveStatusAfterEmailVerification('pendente', 'passenger'), 'ativa');
   assert.equal(resolveStatusAfterEmailVerification('pendente', 'driver'), 'pendente');
   assert.equal(resolveStatusAfterEmailVerification('suspensa', 'passenger'), 'suspensa');
+  assert.equal(resolveStatusAfterEmailVerification('suspensa', 'driver'), 'suspensa');
 });
 
 test('Angolan formatting helpers format Kz and phone cleanly', () => {
