@@ -32,7 +32,6 @@ Aplicação móvel de partilha de táxi em Luanda, Angola (corredor inicial conf
 - **Email Auth no Supabase**: ativar em *Authentication → Providers → Email* e configurar variáveis de ambiente correspondentes.
 
 ### Por fazer (etapas seguintes)
-- **Recuperação de palavra-passe por telefone**: na Etapa 1 a recuperação suporta **apenas e-mail** (`resetPasswordForEmail`). A recuperação por telefone fica para etapa posterior.
 - **Etapa 2 em diante**: pesquisa/correspondência de viagens, cálculo de preço partilhado, pagamentos, chat/notificações em tempo real e aprovação administrativa de motoristas no painel.
 
 ---
