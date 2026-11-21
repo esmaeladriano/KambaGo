@@ -20,7 +20,7 @@ Aplicação móvel de partilha de táxi em Luanda, Angola (corredor inicial conf
 - Traduções centralizadas em português adaptado a Angola (`locales/pt-AO.ts`).
 - Validação Zod (`utils/validation.ts`) para telefone `+244 9XX XXX XXX`, registo, login, OTP de 6 dígitos, recuperação por e-mail, atualização de perfil e eliminação de conta.
 - Máquina de estados de conta (`pendente`, `ativa`, `suspensa`) em `utils/accountState.ts`.
-- Fluxo único de OTP via Supabase Auth (`signUp` + `auth.resend` + `auth.verifyOtp`) ligado à RPC `confirm_phone_verification()` (`003_phone_verification_rpc.sql`), que ativa apenas passageiros após confirmação real no servidor e mantém motoristas em `pendente` até aprovação administrativa.
+- Fluxo de verificação por código enviado por e-mail (Supabase Auth: `signUp` + `auth.resend` + `auth.verifyOtp`), seguido da RPC `confirm_email_verification()` (`005_email_verification_rpc.sql`), que ativa apenas passageiros após confirmação no servidor. Motoristas mantêm-se em `pendente` até aprovação administrativa. A RPC de telefone foi removida em `006_remove_unused_phone_rpc.sql`.
 - Migrations SQL consolidadas (`001` a `004`) com RLS rigorosa em `profiles`, `audit_logs`, `routes` e `fare_rules`, armazenamento de fotos em bucket privado `profile-avatars` (`avatar_path` + URL assinada), e exclusão de conta (`request_account_deletion()`).
 - Persistência local segura no dispositivo: `expo-secure-store` para tokens de sessão do Supabase Auth (`services/supabase/deviceStorage.native.ts`) e `@react-native-async-storage/async-storage` para a preferência não sensível `dataSaverEnabled`.
 
@@ -84,6 +84,6 @@ npm --prefix web-preview run build   # Build Vite da pré-visualização web
 ## Passos Manuais para Ligar ao Supabase
 
 1. Criar projeto Supabase (ambiente de desenvolvimento) e ativar **Email Auth** em *Authentication → Providers → Email*.
-2. Aplicar as migrations por ordem (`001_stage1_auth_profiles.sql` até `004_fare_rules.sql`) e, em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
+2. Aplicar as migrations por ordem (`001_stage1_auth_profiles.sql` até `006_remove_unused_phone_rpc.sql`) e, em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
 3. Promover o primeiro administrador via SQL Editor com `role = 'admin'` e `account_status = 'ativa'`.
 4. Criar `.env` local a partir de `.env.example` (nunca versionar `.env`).

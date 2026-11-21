@@ -24,7 +24,7 @@ function makeDbProfile(overrides: Partial<DbProfileRow> = {}): DbProfileRow {
   return {
     id: 'user-1',
     full_name: 'Joana Mateus',
-    phone: '+244923111222',
+    phone: null,
     email: 'joana@kambago.ao',
     role: 'passenger',
     account_status: 'pendente',
@@ -181,7 +181,6 @@ test('integration readiness reports pending configuration when env vars are abse
 test('auth operations honestly return pending_configuration without env keys', async () => {
   const reg = await registerUser({
     fullName: 'Joana Mateus',
-    phone: '+244923111222',
     email: 'joana@kambago.ao',
     password: 'password123',
     role: 'passenger',
