@@ -68,7 +68,7 @@ begin
   exception when others then v_blocked := true;
   end;
   reset role;
-  if not v_blocked then raise exception 'E-mail diferente foi aceite'; end end;
+  if not v_blocked then raise exception 'E-mail diferente foi aceite'; end if;
 end $$;
 
 select pass('Passageiro recém-registado inicia pendente sem email_verified');
