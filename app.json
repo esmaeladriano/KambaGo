@@ -6,10 +6,15 @@
     "orientation": "portrait",
     "scheme": "kambago",
     "userInterfaceStyle": "light",
+    "icon": "./assets/images/icon.png",
     "backgroundColor": "#F7FAFC",
     "primaryColor": "#102A43",
     "android": {
       "package": "ao.kambago.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#102A43"
+      },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
@@ -24,7 +29,16 @@
         }
       ],
       "expo-status-bar",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F7FAFC",
+          "imageWidth": 240
+        }
+      ]
     ]
   }
 }

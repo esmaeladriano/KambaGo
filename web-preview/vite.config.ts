@@ -8,8 +8,12 @@ export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
+      dedupe: ['react', 'react-dom', 'zustand'],
       alias: {
         '@': rootDir,
+        react: path.resolve(import.meta.dirname, 'node_modules/react'),
+        'react-dom': path.resolve(import.meta.dirname, 'node_modules/react-dom'),
+        zustand: path.resolve(import.meta.dirname, 'node_modules/zustand'),
       },
     },
     server: {

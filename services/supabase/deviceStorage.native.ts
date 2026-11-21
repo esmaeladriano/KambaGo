@@ -1,36 +1,39 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { createChunkedSecureStorage } from './chunkedStorage';
 import type { DeviceKeyValueStorage } from './deviceStorage';
 
-function sanitizeSecureStoreKey(key: string): string {
-  return key.replace(/[^A-Za-z0-9._-]/g, '_');
+declare const __DEV__: boolean | undefined;
+
+function warnSecureStoreError(operation: 'get' | 'set' | 'remove', error: unknown): void {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    const reason = error instanceof Error ? error.message : 'erro desconhecido';
+    console.warn(`[KambaGo SecureStore] Falha ao executar ${operation} da sessão: ${reason}`);
+  }
 }
+
+const rawSecureStore: DeviceKeyValueStorage = {
+  getItem(key: string): Promise<string | null> {
+    return SecureStore.getItemAsync(key);
+  },
+  setItem(key: string, value: string): Promise<void> {
+    return SecureStore.setItemAsync(key, value);
+  },
+  removeItem(key: string): Promise<void> {
+    return SecureStore.deleteItemAsync(key);
+  },
+};
 
 // Tokens de sessão e refresh token do Supabase Auth ficam cifrados via expo-secure-store
 // (Android Keystore / iOS Keychain).
-export const supabaseAuthStorage: DeviceKeyValueStorage = {
-  async getItem(key: string): Promise<string | null> {
-    try {
-      return await SecureStore.getItemAsync(sanitizeSecureStoreKey(key));
-    } catch {
-      return null;
-    }
-  },
-  async setItem(key: string, value: string): Promise<void> {
-    try {
-      await SecureStore.setItemAsync(sanitizeSecureStoreKey(key), value);
-    } catch {
-      // Falha silenciosa para não bloquear sessão em memória se o keystore falhar
-    }
-  },
-  async removeItem(key: string): Promise<void> {
-    try {
-      await SecureStore.deleteItemAsync(sanitizeSecureStoreKey(key));
-    } catch {
-      // Ignorar erro de limpeza
-    }
-  },
-};
+//
+// Decisão arquitetural (T4): usamos chunking explícito em blocos <= 1800 bytes em vez de
+// guardar apenas o refresh_token porque o Supabase Auth exige o payload completo da sessão
+// (access_token, refresh_token, expires_at e user metadata) para hidratar getSession() e
+// onAuthStateChange offline sem invalidar a sessão ou forçar refresh no arranque.
+export const supabaseAuthStorage: DeviceKeyValueStorage = createChunkedSecureStorage(rawSecureStore, {
+  onError: warnSecureStoreError,
+});
 
 // Preferências não sensíveis de interface (ex.: modo poupança de dados) usam AsyncStorage.
 export const preferencesStorage: DeviceKeyValueStorage = {
