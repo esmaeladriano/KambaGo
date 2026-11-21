@@ -314,11 +314,11 @@ export function ProfileView() {
           <BellOff className="w-4 h-4 text-[#FFB547] mt-0.5 shrink-0" />
           <div className="space-y-1">
             <p className="text-sm font-semibold text-[#102A43]">
-              {ptAO.profile.smsNotifications.title} ·{' '}
+              {ptAO.profile.pushNotifications.title} ·{' '}
               <span className="text-[#7C4D00]">{notifications.reason}</span>
             </p>
             <p className="text-xs text-slate-600">
-              {ptAO.profile.smsNotifications.description}
+              {ptAO.profile.pushNotifications.description}
             </p>
           </div>
         </div>
