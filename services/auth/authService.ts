@@ -1,14 +1,13 @@
 import { ptAO } from '../../locales/pt-AO';
 import type {
   AuthActionResult,
+  EmailVerifyPayload,
   LoginPayload,
-  OtpVerifyPayload,
   RegisterPayload,
   UserProfile,
 } from '../../types/auth';
 import type { DbProfileRow, PublicProfileInfoRow } from '../../types/database';
 import { normalizeAngolanPhone } from '../../utils/validation';
-import { readAppConfig } from '../../constants/config';
 import { getSupabaseClient } from '../supabase/client';
 
 const AVATAR_BUCKET = 'profile-avatars';
@@ -26,6 +25,7 @@ export function mapDbProfileToUserProfile(
     role: row.role,
     accountStatus: row.account_status,
     phoneVerified: row.phone_verified,
+    emailVerified: row.email_verified,
     avatarPath: row.avatar_path,
     avatarSignedUrl,
     dataSaverEnabled: row.data_saver_enabled,
@@ -51,42 +51,56 @@ export async function registerUser(
     };
   }
 
-  const normalizedPhone = normalizeAngolanPhone(payload.phone);
-  const nowIso = new Date().toISOString();
-  const signUpInput = payload.email
-    ? {
-        email: payload.email,
-        password: payload.password,
-        options: {
-          data: {
-            full_name: payload.fullName,
-            phone: normalizedPhone,
-            role: payload.role,
-            consent_terms_at: nowIso,
-            consent_privacy_at: nowIso,
-          },
-        },
-      }
-    : {
-        phone: normalizedPhone,
-        password: payload.password,
-        options: {
-          data: {
-            full_name: payload.fullName,
-            phone: normalizedPhone,
-            role: payload.role,
-            consent_terms_at: nowIso,
-            consent_privacy_at: nowIso,
-          },
-        },
-      };
+  return registerUserWithClient(supabase, payload);
+}
 
-  const { data, error } = await supabase.auth.signUp(signUpInput);
+export async function registerUserWithClient(
+  supabase: SupabaseAuthLike,
+  payload: RegisterPayload
+): Promise<AuthActionResult<{ userId: string }>> {
+  const normalizedPhone = payload.phone
+    ? normalizeAngolanPhone(payload.phone)
+    : undefined;
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return {
+      ok: false,
+      status: 'validation_error',
+      message: ptAO.validation.emailInvalid,
+    };
+  }
+
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase.auth.signUp({
+    email: normalizedEmail,
+    password: payload.password,
+    options: {
+      data: {
+        full_name: payload.fullName.trim(),
+        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
+        role: payload.role,
+        consent_terms_at: nowIso,
+        consent_privacy_at: nowIso,
+      },
+    },
+  });
+
   if (error || !data.user) {
     return {
       ok: false,
       status: 'error',
       message: error?.message ?? ptAO.setupStatus.supabaseMissing,
+    };
+  }
+
+  // O Supabase devolve `identities: []` quando o e-mail já existe com proteção anti-enumeração ativa.
+  if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    return {
+      ok: false,
+      status: 'error',
+      message: ptAO.auth.feedback.emailAlreadyRegistered,
+      requiresEmailVerification: true,
     };
   }
 
@@ -96,6 +110,12 @@ export async function registerUser(
     message: ptAO.auth.feedback.registerSuccess,
     data: { userId: data.user.id },
   };
+}
+
+function isUnconfirmedEmailAuthError(message: string | undefined): boolean {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return lower.includes('email not confirmed') || lower.includes('confirm your email');
 }
 
 export async function loginUser(
@@ -110,16 +130,37 @@ export async function loginUser(
     };
   }
 
-  const isEmail = payload.identifier.includes('@');
-  const credentials = isEmail
-    ? { email: payload.identifier.trim(), password: payload.password }
-    : {
-        phone: normalizeAngolanPhone(payload.identifier),
-        password: payload.password,
-      };
+  return loginUserWithClient(supabase, payload);
+}
 
-  const { data, error } = await supabase.auth.signInWithPassword(credentials);
+export async function loginUserWithClient(
+  supabase: SupabaseAuthLike,
+  payload: LoginPayload
+): Promise<AuthActionResult<UserProfile>> {
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return {
+      ok: false,
+      status: 'validation_error',
+      message: ptAO.validation.emailInvalid,
+    };
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: normalizedEmail,
+    password: payload.password,
+  });
+
   if (error || !data.user) {
+    if (isUnconfirmedEmailAuthError(error?.message)) {
+      return {
+        ok: false,
+        status: 'error',
+        message: ptAO.auth.feedback.loginEmailNotConfirmed,
+        requiresEmailVerification: true,
+      };
+    }
+
     return {
       ok: false,
       status: 'error',
@@ -127,7 +168,7 @@ export async function loginUser(
     };
   }
 
-  const profileResult = await fetchMyProfile();
+  const profileResult = await fetchMyProfileWithClient(supabase);
   if (!profileResult.ok || !profileResult.data) {
     return {
       ok: false,
@@ -136,18 +177,42 @@ export async function loginUser(
     };
   }
 
+  let profile = profileResult.data;
+  if (!profile.emailVerified && data.user.email_confirmed_at) {
+    const { data: syncedRow } = await supabase
+      .rpc('confirm_email_verification')
+      .single<DbProfileRow>();
+    if (syncedRow) {
+      const refreshed = await fetchMyProfileWithClient(supabase);
+      profile =
+        refreshed.ok && refreshed.data
+          ? refreshed.data
+          : mapDbProfileToUserProfile(syncedRow);
+    }
+  }
+
+  if (!profile.emailVerified) {
+    return {
+      ok: false,
+      status: 'error',
+      message: ptAO.auth.feedback.loginEmailNotConfirmed,
+      data: profile,
+      requiresEmailVerification: true,
+    };
+  }
+
   return {
     ok: true,
     status: 'success',
     message: ptAO.auth.feedback.loginSuccess,
-    data: profileResult.data,
+    data: profile,
   };
 }
 
 export async function requestPasswordReset(
   email: string
 ): Promise<AuthActionResult> {
-  const trimmedEmail = email.trim();
+  const trimmedEmail = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
     return {
       ok: false,
@@ -181,44 +246,45 @@ export async function requestPasswordReset(
   };
 }
 
-function isSmsProviderUnconfiguredError(message: string): boolean {
-  return /sms|phone provider|unsupported phone provider|twilio|messagebird|vonage/i.test(
-    message
-  );
-}
-
-export async function sendPhoneOtp(phone: string): Promise<AuthActionResult> {
+export async function sendEmailAuthLink(
+  email: string,
+  emailRedirectTo?: string
+): Promise<AuthActionResult> {
   const supabase = getSupabaseClient();
-  const config = readAppConfig();
-  if (!supabase || !config.isSmsConfigured) {
+  if (!supabase) {
     return {
       ok: false,
       status: 'pending_configuration',
-      message: ptAO.setupStatus.smsMissing,
+      message: ptAO.auth.feedback.emailCodePendingConfig,
     };
   }
 
-  return sendPhoneOtpWithClient(supabase, phone);
+  return sendEmailAuthLinkWithClient(supabase, email, emailRedirectTo);
 }
 
-export async function sendPhoneOtpWithClient(
+export async function sendEmailAuthLinkWithClient(
   supabase: SupabaseAuthLike,
-  phone: string
+  email: string,
+  emailRedirectTo?: string
 ): Promise<AuthActionResult> {
-  const normalizedPhone = normalizeAngolanPhone(phone);
-  const { error } = await supabase.auth.resend({
-    type: 'sms',
-    phone: normalizedPhone,
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return {
+      ok: false,
+      status: 'validation_error',
+      message: ptAO.validation.emailInvalid,
+    };
+  }
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: normalizedEmail,
+    options: {
+      shouldCreateUser: true,
+      ...(emailRedirectTo ? { emailRedirectTo } : {}),
+    },
   });
 
   if (error) {
-    if (isSmsProviderUnconfiguredError(error.message)) {
-      return {
-        ok: false,
-        status: 'pending_configuration',
-        message: ptAO.setupStatus.smsMissing,
-      };
-    }
     return {
       ok: false,
       status: 'error',
@@ -229,55 +295,92 @@ export async function sendPhoneOtpWithClient(
   return {
     ok: true,
     status: 'success',
-    message: ptAO.auth.feedback.otpResent,
+    message: ptAO.auth.feedback.emailLinkSent,
   };
 }
 
-export function getOtpConfirmationFeedback(
-  profile: Pick<UserProfile, 'accountStatus' | 'phoneVerified' | 'role'>
-): string {
-  if (profile.accountStatus === 'suspensa') {
-    return ptAO.auth.feedback.otpAccountSuspended;
-  }
-  if (profile.accountStatus === 'ativa' && profile.phoneVerified) {
-    return profile.role === 'passenger'
-      ? ptAO.auth.feedback.otpSuccessPassengerActive
-      : ptAO.auth.feedback.otpSuccess;
-  }
-  if (profile.role === 'driver') {
-    return ptAO.auth.feedback.otpSuccessDriverPending;
-  }
-  return ptAO.auth.feedback.otpConfirmFailed;
-}
-
-export async function verifyPhoneOtp(
-  payload: OtpVerifyPayload
-): Promise<AuthActionResult<UserProfile>> {
+export async function sendEmailVerificationCode(email: string): Promise<AuthActionResult> {
   const supabase = getSupabaseClient();
-  const config = readAppConfig();
-  if (!supabase || !config.isSmsConfigured) {
+  if (!supabase) {
     return {
       ok: false,
       status: 'pending_configuration',
-      message: ptAO.auth.feedback.otpPendingConfig,
+      message: ptAO.auth.feedback.emailCodePendingConfig,
     };
   }
 
-  return verifyPhoneOtpWithClient(supabase, payload);
+  return sendEmailVerificationCodeWithClient(supabase, email);
+}
+
+export async function sendEmailVerificationCodeWithClient(
+  supabase: SupabaseAuthLike,
+  email: string
+): Promise<AuthActionResult> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: normalizedEmail,
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      status: 'error',
+      message: error.message,
+    };
+  }
+
+  return {
+    ok: true,
+    status: 'success',
+    message: ptAO.auth.feedback.emailCodeResent,
+  };
+}
+
+export function getEmailConfirmationFeedback(
+  profile: Pick<UserProfile, 'accountStatus' | 'emailVerified' | 'role'>
+): string {
+  if (profile.accountStatus === 'suspensa') {
+    return ptAO.auth.feedback.emailVerifyAccountSuspended;
+  }
+  if (profile.accountStatus === 'ativa' && profile.emailVerified) {
+    return profile.role === 'passenger'
+      ? ptAO.auth.feedback.emailVerifySuccessPassengerActive
+      : ptAO.auth.feedback.emailVerifySuccess;
+  }
+  if (profile.role === 'driver') {
+    return ptAO.auth.feedback.emailVerifySuccessDriverPending;
+  }
+  return ptAO.auth.feedback.emailConfirmFailed;
+}
+
+export async function verifyEmailCode(
+  payload: EmailVerifyPayload
+): Promise<AuthActionResult<UserProfile>> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return {
+      ok: false,
+      status: 'pending_configuration',
+      message: ptAO.auth.feedback.emailCodePendingConfig,
+    };
+  }
+
+  return verifyEmailCodeWithClient(supabase, payload);
 }
 
 type SupabaseAuthLike = NonNullable<ReturnType<typeof getSupabaseClient>>;
 
-export async function verifyPhoneOtpWithClient(
+export async function verifyEmailCodeWithClient(
   supabase: SupabaseAuthLike,
-  payload: OtpVerifyPayload
+  payload: EmailVerifyPayload
 ): Promise<AuthActionResult<UserProfile>> {
-  const normalizedPhone = normalizeAngolanPhone(payload.phone);
+  const normalizedEmail = payload.email.trim().toLowerCase();
 
   const { error: otpError } = await supabase.auth.verifyOtp({
-    phone: normalizedPhone,
-    token: payload.code,
-    type: 'sms',
+    email: normalizedEmail,
+    token: payload.code.trim(),
+    type: 'signup',
   });
 
   if (otpError) {
@@ -289,14 +392,14 @@ export async function verifyPhoneOtpWithClient(
   }
 
   const { data: confirmedRow, error: confirmError } = await supabase
-    .rpc('confirm_phone_verification')
+    .rpc('confirm_email_verification')
     .single<DbProfileRow>();
 
   if (confirmError || !confirmedRow) {
     return {
       ok: false,
       status: 'error',
-      message: confirmError?.message ?? ptAO.auth.feedback.otpConfirmFailed,
+      message: confirmError?.message ?? ptAO.auth.feedback.emailConfirmFailed,
     };
   }
 
@@ -306,11 +409,11 @@ export async function verifyPhoneOtpWithClient(
       ? refreshed.data
       : mapDbProfileToUserProfile(confirmedRow);
 
-  if (!confirmedProfile.phoneVerified) {
+  if (!confirmedProfile.emailVerified) {
     return {
       ok: false,
       status: 'error',
-      message: ptAO.auth.feedback.otpConfirmFailed,
+      message: ptAO.auth.feedback.emailConfirmFailed,
       data: confirmedProfile,
     };
   }
@@ -318,7 +421,7 @@ export async function verifyPhoneOtpWithClient(
   return {
     ok: true,
     status: 'success',
-    message: getOtpConfirmationFeedback(confirmedProfile),
+    message: getEmailConfirmationFeedback(confirmedProfile),
     data: confirmedProfile,
   };
 }

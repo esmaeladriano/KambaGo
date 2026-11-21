@@ -33,6 +33,13 @@ export const angolanPhoneSchema = z
     message: ptAO.validation.phoneInvalid,
   });
 
+export const emailSchema = z
+  .string()
+  .trim()
+  .min(1, ptAO.validation.required)
+  .email(ptAO.validation.emailInvalid)
+  .transform((val) => val.toLowerCase());
+
 export const registerSchema = z
   .object({
     fullName: z
@@ -40,14 +47,15 @@ export const registerSchema = z
       .trim()
       .min(3, ptAO.validation.fullNameMin)
       .max(100),
-    phone: angolanPhoneSchema,
-    email: z
+    phone: z
       .string()
       .trim()
-      .optional()
-      .refine((val) => !val || z.string().email().safeParse(val).success, {
-        message: ptAO.validation.emailInvalid,
-      }),
+      .transform((val) => (val ? normalizeAngolanPhone(val) : undefined))
+      .refine((val) => !val || /^\+2449\d{8}$/.test(val), {
+        message: ptAO.validation.phoneInvalid,
+      })
+      .optional(),
+    email: emailSchema,
     password: z.string().min(8, ptAO.validation.passwordMin),
     confirmPassword: z.string().min(1, ptAO.validation.required),
     role: z.enum(['passenger', 'driver']),
@@ -61,34 +69,20 @@ export const registerSchema = z
   });
 
 export const loginSchema = z.object({
-  identifier: z
-    .string()
-    .trim()
-    .min(1, ptAO.validation.required)
-    .refine(
-      (val) =>
-        isValidAngolanPhone(val) || z.string().email().safeParse(val).success,
-      {
-        message: ptAO.validation.phoneInvalid,
-      }
-    ),
+  email: emailSchema,
   password: z.string().min(8, ptAO.validation.passwordMin),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, ptAO.validation.required)
-    .email(ptAO.validation.emailInvalid),
+  email: emailSchema,
 });
 
-export const otpSchema = z.object({
-  phone: angolanPhoneSchema,
+export const emailVerificationSchema = z.object({
+  email: emailSchema,
   code: z
     .string()
     .trim()
-    .regex(/^\d{6}$/, ptAO.validation.otpInvalid),
+    .regex(/^\d{6}$/, ptAO.validation.emailCodeInvalid),
 });
 
 export const profileUpdateSchema = z.object({
@@ -119,6 +113,6 @@ export const deleteAccountSchema = z.object({
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
-export type OtpFormValues = z.infer<typeof otpSchema>;
+export type EmailVerificationFormValues = z.infer<typeof emailVerificationSchema>;
 export type ProfileUpdateFormValues = z.infer<typeof profileUpdateSchema>;
 export type DeleteAccountFormValues = z.infer<typeof deleteAccountSchema>;

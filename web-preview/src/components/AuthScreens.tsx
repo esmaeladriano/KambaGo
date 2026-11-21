@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -7,18 +8,19 @@ import {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
-  otpSchema,
+  emailVerificationSchema,
   type RegisterFormValues,
   type LoginFormValues,
   type ForgotPasswordFormValues,
-  type OtpFormValues,
+  type EmailVerificationFormValues,
 } from '../../../utils/validation';
 import {
   registerUser,
   loginUser,
   requestPasswordReset,
-  sendPhoneOtp,
-  verifyPhoneOtp,
+  sendEmailAuthLink,
+  sendEmailVerificationCode,
+  verifyEmailCode,
 } from '../../../services/auth/authService';
 import { getIntegrationReadiness } from '../../../services/supabase/client';
 import { KambaGoLogo } from './KambaGoLogo';
@@ -205,20 +207,23 @@ export function OnboardingView() {
 
 export function RegisterView() {
   const setRoute = useAuthStore((s) => s.setRoute);
-  const setPendingOtpPhone = useAuthStore((s) => s.setPendingOtpPhone);
+  const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const setStatusBanner = useAuthStore((s) => s.setStatusBanner);
+  const [isSendingLink, setIsSendingLink] = useState(false);
 
   const {
     register,
     handleSubmit,
     watch,
+    getValues,
     setValue,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: '',
-      phone: '+244 ',
       email: '',
       password: '',
       confirmPassword: '',
@@ -230,20 +235,49 @@ export function RegisterView() {
   const selectedRole = watch('role');
 
   const onSubmit = async (values: RegisterFormValues) => {
+    const normalizedEmail = (values.email ?? '').trim().toLowerCase();
     const result = await registerUser({
       ...values,
-      phone: values.phone ?? '',
+      email: normalizedEmail,
     });
     if (result.ok) {
-      setPendingOtpPhone(values.phone);
+      setPendingVerificationEmail(normalizedEmail);
       setStatusBanner({ kind: 'success', message: result.message });
-      setRoute('verify-otp');
+      setRoute('verify-email');
       return;
+    }
+    if (result.requiresEmailVerification && normalizedEmail) {
+      setPendingVerificationEmail(normalizedEmail);
     }
     setStatusBanner({
       kind: result.status === 'pending_configuration' ? 'warning' : 'error',
       message: result.message,
     });
+  };
+
+  const handleSendMagicLink = async () => {
+    const email = (getValues('email') ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('email', { type: 'manual', message: ptAO.validation.emailInvalid });
+      return;
+    }
+    clearErrors('email');
+    setIsSendingLink(true);
+    try {
+      const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const result = await sendEmailAuthLink(email, redirectTo);
+      setPendingVerificationEmail(email);
+      setStatusBanner({
+        kind: result.ok
+          ? 'success'
+          : result.status === 'pending_configuration'
+          ? 'warning'
+          : 'error',
+        message: result.message,
+      });
+    } finally {
+      setIsSendingLink(false);
+    }
   };
 
   return (
@@ -313,28 +347,13 @@ export function RegisterView() {
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="reg-phone" className="block text-sm font-medium text-[#102A43]">
-          {ptAO.auth.fields.phone}
-        </label>
-        <input
-          id="reg-phone"
-          type="tel"
-          placeholder={ptAO.auth.fields.phonePlaceholder}
-          {...register('phone')}
-          className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F7FAFC] text-sm font-mono-tabular focus:outline-none focus:ring-2 focus:ring-[#16B8A6]"
-        />
-        {errors.phone && (
-          <p className="text-xs text-red-600">{errors.phone.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-1">
         <label htmlFor="reg-email" className="block text-sm font-medium text-[#102A43]">
           {ptAO.auth.fields.email}
         </label>
         <input
           id="reg-email"
           type="email"
+          autoComplete="email"
           placeholder={ptAO.auth.fields.emailPlaceholder}
           {...register('email')}
           className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F7FAFC] text-sm focus:outline-none focus:ring-2 focus:ring-[#16B8A6]"
@@ -413,6 +432,15 @@ export function RegisterView() {
         {isSubmitting ? ptAO.common.saving : ptAO.auth.actions.submitRegister}
       </button>
 
+      <button
+        type="button"
+        onClick={handleSendMagicLink}
+        disabled={isSendingLink}
+        className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-[#F1F5F9] hover:bg-slate-200 disabled:opacity-60 text-[#102A43] font-semibold text-sm transition-colors cursor-pointer"
+      >
+        {isSendingLink ? ptAO.common.loading : ptAO.auth.actions.sendEmailLink}
+      </button>
+
       <div className="flex items-center justify-between pt-1 text-xs">
         <button
           type="button"
@@ -423,10 +451,16 @@ export function RegisterView() {
         </button>
         <button
           type="button"
-          onClick={() => setRoute('verify-otp')}
+          onClick={() => {
+            const typedEmail = (getValues('email') ?? '').trim().toLowerCase();
+            if (typedEmail) {
+              setPendingVerificationEmail(typedEmail);
+            }
+            setRoute('verify-email');
+          }}
           className="font-medium text-slate-600 hover:text-[#102A43] py-2 cursor-pointer"
         >
-          {ptAO.auth.actions.verifyPhoneLink}
+          {ptAO.auth.actions.verifyEmailLink}
         </button>
       </div>
     </form>
@@ -436,29 +470,69 @@ export function RegisterView() {
 export function LoginView() {
   const setRoute = useAuthStore((s) => s.setRoute);
   const setProfile = useAuthStore((s) => s.setProfile);
+  const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const setStatusBanner = useAuthStore((s) => s.setStatusBanner);
+  const [isSendingLink, setIsSendingLink] = useState(false);
 
   const {
     register,
     handleSubmit,
+    getValues,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { identifier: '', password: '' },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    const result = await loginUser(values);
+    const normalizedEmail = (values.email ?? '').trim().toLowerCase();
+    const result = await loginUser({
+      email: normalizedEmail,
+      password: values.password ?? '',
+    });
     if (result.ok && result.data) {
       setProfile(result.data);
       setStatusBanner({ kind: 'success', message: result.message });
       setRoute('profile');
       return;
     }
+    if (result.requiresEmailVerification) {
+      setPendingVerificationEmail(normalizedEmail);
+      setStatusBanner({ kind: 'warning', message: result.message });
+      setRoute('verify-email');
+      return;
+    }
     setStatusBanner({
       kind: result.status === 'pending_configuration' ? 'warning' : 'error',
       message: result.message,
     });
+  };
+
+  const handleSendAuthLink = async () => {
+    const email = (getValues('email') ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('email', { type: 'manual', message: ptAO.validation.emailInvalid });
+      return;
+    }
+    clearErrors('email');
+    setIsSendingLink(true);
+    try {
+      const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const result = await sendEmailAuthLink(email, redirectTo);
+      setPendingVerificationEmail(email);
+      setStatusBanner({
+        kind: result.ok
+          ? 'success'
+          : result.status === 'pending_configuration'
+          ? 'warning'
+          : 'error',
+        message: result.message,
+      });
+    } finally {
+      setIsSendingLink(false);
+    }
   };
 
   return (
@@ -477,18 +551,18 @@ export function LoginView() {
       <InlineBanner />
 
       <div className="space-y-1">
-        <label htmlFor="login-identifier" className="block text-sm font-medium text-[#102A43]">
-          {ptAO.auth.fields.phone} / {ptAO.auth.fields.email}
+        <label htmlFor="login-email" className="block text-sm font-medium text-[#102A43]">
+          {ptAO.auth.fields.email}
         </label>
         <input
-          id="login-identifier"
-          type="text"
-          placeholder={ptAO.auth.fields.phonePlaceholder}
-          {...register('identifier')}
+          id="login-email"
+          type="email"
+          placeholder={ptAO.auth.fields.emailPlaceholder}
+          {...register('email')}
           className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F7FAFC] text-sm focus:outline-none focus:ring-2 focus:ring-[#16B8A6]"
         />
-        {errors.identifier && (
-          <p className="text-xs text-red-600">{errors.identifier.message}</p>
+        {errors.email && (
+          <p className="text-xs text-red-600">{errors.email.message}</p>
         )}
       </div>
 
@@ -516,6 +590,15 @@ export function LoginView() {
         {isSubmitting ? ptAO.common.loading : ptAO.auth.actions.submitLogin}
       </button>
 
+      <button
+        type="button"
+        onClick={handleSendAuthLink}
+        disabled={isSendingLink}
+        className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-[#F1F5F9] hover:bg-slate-200 disabled:opacity-60 text-[#102A43] font-semibold text-sm transition-colors cursor-pointer"
+      >
+        {isSendingLink ? ptAO.common.loading : ptAO.auth.actions.sendEmailLink}
+      </button>
+
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
         <button
           type="button"
@@ -523,6 +606,19 @@ export function LoginView() {
           className="font-medium text-slate-600 hover:text-[#102A43] py-2 cursor-pointer"
         >
           {ptAO.auth.actions.forgotLink}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const typedEmail = (getValues('email') ?? '').trim().toLowerCase();
+            if (typedEmail) {
+              setPendingVerificationEmail(typedEmail);
+            }
+            setRoute('verify-email');
+          }}
+          className="font-medium text-slate-600 hover:text-[#102A43] py-2 cursor-pointer"
+        >
+          {ptAO.auth.actions.verifyEmailLink}
         </button>
         <button
           type="button"
@@ -611,27 +707,38 @@ export function ForgotPasswordView() {
   );
 }
 
-export function VerifyOtpView() {
-  const pendingOtpPhone = useAuthStore((s) => s.pendingOtpPhone);
+export function VerifyEmailView() {
+  const pendingVerificationEmail = useAuthStore((s) => s.pendingVerificationEmail);
+  const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const setProfile = useAuthStore((s) => s.setProfile);
   const setRoute = useAuthStore((s) => s.setRoute);
   const setStatusBanner = useAuthStore((s) => s.setStatusBanner);
-  const readiness = getIntegrationReadiness();
+  const [isResending, setIsResending] = useState(false);
 
   const {
     register,
     handleSubmit,
     getValues,
+    setValue,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
-  } = useForm<OtpFormValues>({
-    resolver: zodResolver(otpSchema),
-    defaultValues: { phone: pendingOtpPhone || '+244 ', code: '' },
+  } = useForm<EmailVerificationFormValues>({
+    resolver: zodResolver(emailVerificationSchema),
+    defaultValues: { email: pendingVerificationEmail || '', code: '' },
   });
 
-  const onSubmit = async (values: OtpFormValues) => {
-    const result = await verifyPhoneOtp({
-      phone: values.phone ?? '',
-      code: values.code,
+  useEffect(() => {
+    if (pendingVerificationEmail) {
+      setValue('email', pendingVerificationEmail);
+    }
+  }, [pendingVerificationEmail, setValue]);
+
+  const onSubmit = async (values: EmailVerificationFormValues) => {
+    const normalizedEmail = (values.email ?? '').trim().toLowerCase();
+    const result = await verifyEmailCode({
+      email: normalizedEmail,
+      code: (values.code ?? '').trim(),
     });
     if (result.data) {
       setProfile(result.data);
@@ -646,16 +753,33 @@ export function VerifyOtpView() {
       message: result.message,
     });
     if (result.ok && result.data?.accountStatus === 'ativa') {
+      setPendingVerificationEmail('');
       setRoute('profile');
     }
   };
 
   const handleResend = async () => {
-    const result = await sendPhoneOtp(getValues('phone'));
-    setStatusBanner({
-      kind: result.ok ? 'success' : 'warning',
-      message: result.message,
-    });
+    const email = (getValues('email') ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('email', { type: 'manual', message: ptAO.validation.emailInvalid });
+      return;
+    }
+    clearErrors('email');
+    setIsResending(true);
+    try {
+      const result = await sendEmailVerificationCode(email);
+      setPendingVerificationEmail(email);
+      setStatusBanner({
+        kind: result.ok
+          ? 'success'
+          : result.status === 'pending_configuration'
+          ? 'warning'
+          : 'error',
+        message: result.message,
+      });
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
@@ -666,46 +790,41 @@ export function VerifyOtpView() {
     >
       <div className="space-y-1">
         <h2 className="font-display text-xl font-bold text-[#102A43]">
-          {ptAO.auth.otpTitle}
+          {ptAO.auth.verifyEmailTitle}
         </h2>
-        <p className="text-sm text-slate-600">{ptAO.auth.otpSubtitle}</p>
+        <p className="text-sm text-slate-600">{ptAO.auth.verifyEmailSubtitle}</p>
       </div>
-
-      {!readiness.smsConfigured && (
-        <div className="rounded-xl bg-[#FFF6E5] border border-[#FFB547]/50 p-3.5 text-xs text-[#7C4D00] space-y-1">
-          <p className="font-semibold">{ptAO.common.pendingSetupBadge}</p>
-          <p>{ptAO.setupStatus.smsMissing}</p>
-        </div>
-      )}
 
       <InlineBanner />
 
       <div className="space-y-1">
-        <label htmlFor="otp-phone" className="block text-sm font-medium text-[#102A43]">
-          {ptAO.auth.fields.phone}
+        <label htmlFor="verify-email-address" className="block text-sm font-medium text-[#102A43]">
+          {ptAO.auth.fields.email}
         </label>
         <input
-          id="otp-phone"
-          type="tel"
-          placeholder={ptAO.auth.fields.phonePlaceholder}
-          {...register('phone')}
-          className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F7FAFC] text-sm font-mono-tabular focus:outline-none focus:ring-2 focus:ring-[#16B8A6]"
+          id="verify-email-address"
+          type="email"
+          autoComplete="email"
+          placeholder={ptAO.auth.fields.emailPlaceholder}
+          {...register('email')}
+          className="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F7FAFC] text-sm focus:outline-none focus:ring-2 focus:ring-[#16B8A6]"
         />
-        {errors.phone && (
-          <p className="text-xs text-red-600">{errors.phone.message}</p>
+        {errors.email && (
+          <p className="text-xs text-red-600">{errors.email.message}</p>
         )}
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="otp-code" className="block text-sm font-medium text-[#102A43]">
-          {ptAO.auth.fields.otpCode}
+        <label htmlFor="verify-email-code" className="block text-sm font-medium text-[#102A43]">
+          {ptAO.auth.fields.emailCode}
         </label>
         <input
-          id="otp-code"
+          id="verify-email-code"
           type="text"
           inputMode="numeric"
+          autoComplete="one-time-code"
           maxLength={6}
-          placeholder={ptAO.auth.fields.otpPlaceholder}
+          placeholder={ptAO.auth.fields.emailCodePlaceholder}
           {...register('code')}
           className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F7FAFC] text-lg tracking-[0.25em] text-center font-mono-tabular focus:outline-none focus:ring-2 focus:ring-[#16B8A6]"
         />
@@ -717,18 +836,19 @@ export function VerifyOtpView() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full min-h-[48px] px-5 py-3 rounded-xl bg-[#16B8A6] hover:bg-[#0F9485] text-white font-semibold text-base transition-colors cursor-pointer"
+        className="w-full min-h-[48px] px-5 py-3 rounded-xl bg-[#16B8A6] hover:bg-[#0F9485] disabled:opacity-60 text-white font-semibold text-base transition-colors cursor-pointer"
       >
-        {ptAO.auth.actions.submitOtp}
+        {isSubmitting ? ptAO.common.loading : ptAO.auth.actions.submitVerifyEmail}
       </button>
 
       <div className="flex items-center justify-between pt-1 text-xs">
         <button
           type="button"
           onClick={handleResend}
-          className="font-semibold text-[#102A43] hover:underline py-2 cursor-pointer"
+          disabled={isResending}
+          className="font-semibold text-[#102A43] hover:underline disabled:opacity-60 py-2 cursor-pointer"
         >
-          {ptAO.auth.actions.resendOtp}
+          {isResending ? ptAO.common.loading : ptAO.auth.actions.resendEmailCode}
         </button>
         <button
           type="button"

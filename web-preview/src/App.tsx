@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { MotionConfig, motion, AnimatePresence } from 'motion/react';
-import { Home, User, Shield, KeyRound, UserPlus } from 'lucide-react';
+import { Home, User, MailCheck, KeyRound, UserPlus } from 'lucide-react';
 import { ptAO } from '../../locales/pt-AO';
 import { useAuthStore, type Stage1Route } from '../../store/useAuthStore';
 import { getIntegrationReadiness } from '../../services/supabase/client';
@@ -12,7 +12,7 @@ import {
   RegisterView,
   LoginView,
   ForgotPasswordView,
-  VerifyOtpView,
+  VerifyEmailView,
 } from './components/AuthScreens';
 import { ProfileView, LegalPrivacyView } from './components/ProfileScreens';
 
@@ -22,7 +22,7 @@ const NAV_ITEMS: { id: Stage1Route; label: string }[] = [
   { id: 'register', label: ptAO.navigation.screens.register },
   { id: 'login', label: ptAO.navigation.screens.login },
   { id: 'forgot-password', label: ptAO.navigation.screens.forgotPassword },
-  { id: 'verify-otp', label: ptAO.navigation.screens.verifyOtp },
+  { id: 'verify-email', label: ptAO.navigation.screens.verifyEmail },
   { id: 'profile', label: ptAO.navigation.screens.profile },
   { id: 'legal', label: ptAO.navigation.screens.legal },
 ];
@@ -62,8 +62,8 @@ export default function App() {
         return <LoginView />;
       case 'forgot-password':
         return <ForgotPasswordView />;
-      case 'verify-otp':
-        return <VerifyOtpView />;
+      case 'verify-email':
+        return <VerifyEmailView />;
       case 'profile':
         return <ProfileView />;
       case 'legal':
@@ -116,14 +116,14 @@ export default function App() {
               </button>
               <button
                 type="button"
-                onClick={() => setRoute('verify-otp')}
+                onClick={() => setRoute('verify-email')}
                 className={`whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
-                  currentRoute === 'verify-otp'
+                  currentRoute === 'verify-email'
                     ? 'text-[#102A43] font-semibold'
                     : 'hover:text-[#102A43]'
                 }`}
               >
-                {ptAO.navigation.screens.verifyOtp}
+                {ptAO.navigation.screens.verifyEmail}
               </button>
               <button
                 type="button"
@@ -208,14 +208,6 @@ export default function App() {
                     </span>
                   </li>
                   <li className="flex items-center justify-between gap-2">
-                    <span>Provedor SMS OTP</span>
-                    <span className="font-semibold text-[#7C4D00]">
-                      {readiness.smsConfigured
-                        ? readiness.smsProvider
-                        : ptAO.common.pendingSetupBadge}
-                    </span>
-                  </li>
-                  <li className="flex items-center justify-between gap-2">
                     <span>Mapas ({readiness.mapsProvider})</span>
                     <span className="font-semibold text-[#7C4D00]">
                       {readiness.mapsConfigured
@@ -296,13 +288,13 @@ export default function App() {
 
           <button
             type="button"
-            onClick={() => setRoute('verify-otp')}
+            onClick={() => setRoute('verify-email')}
             className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium cursor-pointer ${
-              currentRoute === 'verify-otp' ? 'text-[#16B8A6]' : 'text-slate-500'
+              currentRoute === 'verify-email' ? 'text-[#16B8A6]' : 'text-slate-500'
             }`}
           >
-            <Shield className="w-5 h-5" />
-            <span>OTP</span>
+            <MailCheck className="w-5 h-5" />
+            <span>Confirmar</span>
           </button>
 
           <button

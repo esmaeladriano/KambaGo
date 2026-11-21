@@ -3,12 +3,12 @@ import { ptAO } from '../locales/pt-AO';
 
 export function canAccountAccessTrips(
   status: AccountStatus,
-  phoneVerified: boolean
+  emailVerified: boolean
 ): boolean {
-  return status === 'ativa' && phoneVerified;
+  return status === 'ativa' && emailVerified;
 }
 
-export function resolveStatusAfterPhoneVerification(
+export function resolveStatusAfterEmailVerification(
   currentStatus: AccountStatus,
   role: UserProfile['role']
 ): AccountStatus {

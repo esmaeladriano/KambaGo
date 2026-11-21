@@ -1,11 +1,12 @@
 export interface DbProfileRow {
   id: string;
   full_name: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   role: 'passenger' | 'driver' | 'admin';
   account_status: 'pendente' | 'ativa' | 'suspensa';
   phone_verified: boolean;
+  email_verified: boolean;
   avatar_path: string | null;
   data_saver_enabled: boolean;
   intt_registration_number: string | null;

@@ -206,7 +206,7 @@ export function ProfileView() {
               </p>
               <p className="text-xs text-slate-500">
                 {profile
-                  ? `${formatAngolanPhoneDisplay(profile.phone)} · ${ptAO.profile.roles[profile.role]}`
+                  ? `${profile.email ? `${profile.email} · ` : ''}${profile.phone ? `${formatAngolanPhoneDisplay(profile.phone)} · ` : ''}${ptAO.profile.roles[profile.role]}`
                   : ptAO.profile.photo.privateStorageNote}
               </p>
             </div>

@@ -8,14 +8,14 @@ export type Stage1Route =
   | 'login'
   | 'register'
   | 'forgot-password'
-  | 'verify-otp'
+  | 'verify-email'
   | 'profile'
   | 'legal';
 
 interface AuthState {
   currentRoute: Stage1Route;
   onboardingStep: number;
-  pendingOtpPhone: string;
+  pendingVerificationEmail: string;
   profile: UserProfile | null;
   dataSaverEnabled: boolean;
   preferencesHydrated: boolean;
@@ -25,7 +25,7 @@ interface AuthState {
   } | null;
   setRoute: (route: Stage1Route) => void;
   setOnboardingStep: (step: number) => void;
-  setPendingOtpPhone: (phone: string) => void;
+  setPendingVerificationEmail: (email: string) => void;
   setProfile: (profile: UserProfile | null) => void;
   hydratePreferences: () => Promise<void>;
   setDataSaverEnabled: (enabled: boolean) => void;
@@ -38,14 +38,14 @@ const STORAGE_KEY_DATA_SAVER = 'kambago_data_saver';
 export const useAuthStore = create<AuthState>((set) => ({
   currentRoute: 'welcome',
   onboardingStep: 0,
-  pendingOtpPhone: '',
+  pendingVerificationEmail: '',
   profile: null,
   dataSaverEnabled: false,
   preferencesHydrated: false,
   statusBanner: null,
   setRoute: (currentRoute) => set({ currentRoute, statusBanner: null }),
   setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
-  setPendingOtpPhone: (pendingOtpPhone) => set({ pendingOtpPhone }),
+  setPendingVerificationEmail: (pendingVerificationEmail) => set({ pendingVerificationEmail }),
   setProfile: (profile) =>
     set((state) => ({
       profile,

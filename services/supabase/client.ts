@@ -19,7 +19,7 @@ export function getSupabaseClient(): SupabaseClient | null {
       storage: supabaseAuthStorage,
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: typeof document !== 'undefined',
     },
   });
   return cachedClient;
@@ -29,8 +29,6 @@ export function getIntegrationReadiness() {
   const config = readAppConfig();
   return {
     supabaseConfigured: config.isSupabaseConfigured,
-    smsConfigured: config.isSmsConfigured,
-    smsProvider: config.smsProvider,
     mapsConfigured: config.mapsApiKeyConfigured,
     mapsProvider: config.mapsProvider,
     notificationsConfigured: config.isNotificationsConfigured,

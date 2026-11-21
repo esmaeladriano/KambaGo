@@ -27,8 +27,6 @@ export const ptAO = {
     supabaseMissing:
       'Supabase ainda não configurado neste ambiente (faltam EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY). As operações de servidor ficam bloqueadas até configuração.',
     supabaseReady: 'Ligação ao Supabase ativa.',
-    smsMissing:
-      'Provedor SMS para OTP em configuração pendente. Nenhum código SMS real é enviado sem integração de provedor.',
     mapsMissing:
       'Chave de mapas em configuração pendente (camada de abstração pronta para Google Maps / Mapbox).',
     storageMissing:
@@ -55,7 +53,7 @@ export const ptAO = {
       },
       {
         title: 'Pensado para a tua segurança',
-        body: 'Telefone verificado, contactos de confiança e estado da conta acompanhado para viajar com tranquilidade.',
+        body: 'E-mail confirmado, contactos de confiança e estado da conta acompanhado para viajar com tranquilidade.',
       },
     ],
     finishCta: 'Criar conta',
@@ -63,28 +61,29 @@ export const ptAO = {
   },
   auth: {
     loginTitle: 'Entrar no KambaGo',
-    loginSubtitle: 'Usa o teu número de telefone angolano ou e-mail registado.',
+    loginSubtitle: 'Usa o teu e-mail registado e a tua palavra-passe.',
     registerTitle: 'Criar conta',
-    registerSubtitle: 'Registo rápido com dados mínimos para começar a viajar.',
+    registerSubtitle: 'Regista-te com o teu e-mail para receber o código ou link de confirmação.',
     forgotTitle: 'Recuperar palavra-passe',
     forgotSubtitle:
-      'Indica o e-mail associado à tua conta para receber instruções de recuperação. (Recuperação por telefone será adicionada numa etapa posterior.)',
-    otpTitle: 'Confirmar número por OTP',
-    otpSubtitle: 'Introduz o código de 6 dígitos enviado para o teu número.',
+      'Indica o e-mail associado à tua conta para receber instruções de recuperação.',
+    verifyEmailTitle: 'Confirmar e-mail',
+    verifyEmailSubtitle:
+      'Introduz o código de confirmação de 6 dígitos enviado para o teu e-mail.',
     fields: {
       fullName: 'Nome completo',
       fullNamePlaceholder: 'Ex.: Manuel Domingos',
       phone: 'Telefone (+244)',
       phonePlaceholder: '+244 923 000 000',
-      email: 'E-mail (opcional para recuperação)',
+      email: 'E-mail',
       emailRecovery: 'E-mail registado',
       emailPlaceholder: 'nome@exemplo.ao',
       password: 'Palavra-passe',
       passwordPlaceholder: 'Mínimo 8 caracteres',
       confirmPassword: 'Confirmar palavra-passe',
       confirmPasswordPlaceholder: 'Repete a palavra-passe',
-      otpCode: 'Código OTP (6 dígitos)',
-      otpPlaceholder: '000000',
+      emailCode: 'Código de confirmação (6 dígitos)',
+      emailCodePlaceholder: '000000',
       role: 'Como vais usar o KambaGo?',
       rolePassenger: 'Passageiro',
       roleDriver: 'Motorista / Taxista',
@@ -99,31 +98,39 @@ export const ptAO = {
       submitLogin: 'Entrar',
       submitRegister: 'Criar conta',
       submitForgot: 'Enviar recuperação',
-      submitOtp: 'Confirmar código',
-      resendOtp: 'Reenviar código OTP',
+      submitVerifyEmail: 'Confirmar código',
+      resendEmailCode: 'Reenviar código por e-mail',
+      sendEmailLink: 'Enviar link de acesso por e-mail',
       forgotLink: 'Esqueci-me da palavra-passe',
       goToRegister: 'Não tens conta? Criar conta',
       goToLogin: 'Já tens conta? Entrar',
-      verifyPhoneLink: 'Verificar número por OTP',
+      verifyEmailLink: 'Já tenho código de confirmação',
       logout: 'Terminar sessão',
     },
     feedback: {
       loginSuccess: 'Sessão iniciada com sucesso.',
+      loginEmailNotConfirmed:
+        'O teu e-mail ainda não foi confirmado. Introduz o código de 6 dígitos enviado para o teu e-mail.',
       registerPendingConfig:
         'Formulário validado, mas o registo no servidor aguarda configuração do Supabase neste ambiente.',
-      registerSuccess: 'Conta criada. Confirma o teu número por OTP para ativar todas as funções.',
+      registerSuccess:
+        'Conta criada. Introduz o código enviado para o teu e-mail para confirmar o cadastro.',
+      emailAlreadyRegistered:
+        'Este endereço de e-mail já está registado. Inicia sessão ou confirma o código enviado anteriormente.',
       forgotSent: 'Se a conta existir no servidor, receberás as instruções de recuperação.',
-      otpPendingConfig:
-        'O envio e verificação de OTP estão em estado "configuração pendente" (sem provedor SMS ligado).',
-      otpResent: 'Novo código OTP enviado por SMS.',
-      otpSuccess: 'Número verificado com sucesso.',
-      otpSuccessPassengerActive:
-        'Número verificado com sucesso. A tua conta de passageiro está ativa.',
-      otpSuccessDriverPending:
-        'Número verificado com sucesso. A tua conta de motorista aguarda aprovação administrativa.',
-      otpAccountSuspended:
-        'Número verificado, mas a tua conta permanece suspensa. Contacta o suporte.',
-      otpConfirmFailed:
+      emailLinkSent:
+        'Enviámos um link de autenticação para o teu e-mail. Abre a tua caixa de correio para continuar.',
+      emailCodePendingConfig:
+        'O envio e confirmação de código por e-mail aguardam configuração do Supabase neste ambiente.',
+      emailCodeResent: 'Novo código de confirmação enviado para o teu e-mail.',
+      emailVerifySuccess: 'E-mail confirmado com sucesso.',
+      emailVerifySuccessPassengerActive:
+        'E-mail confirmado com sucesso. A tua conta de passageiro está ativa.',
+      emailVerifySuccessDriverPending:
+        'E-mail confirmado com sucesso. A tua conta de motorista aguarda aprovação administrativa.',
+      emailVerifyAccountSuspended:
+        'E-mail confirmado, mas a tua conta permanece suspensa. Contacta o suporte.',
+      emailConfirmFailed:
         'Código validado, mas não foi possível confirmar a ativação da conta no servidor.',
       unauthenticatedTitle: 'Sessão ainda não iniciada',
       unauthenticatedBody:
@@ -138,7 +145,7 @@ export const ptAO = {
     statuses: {
       pendente: {
         label: 'Pendente',
-        description: 'A aguardar verificação de telefone ou aprovação inicial.',
+        description: 'A aguardar confirmação do e-mail ou aprovação inicial.',
       },
       ativa: {
         label: 'Ativa',
@@ -208,7 +215,7 @@ export const ptAO = {
       },
       {
         title: '2. Dados pessoais mínimos',
-        body: 'Recolhemos apenas nome, número de telefone (+244), fotografia opcional e registos de viagem estritamente necessários para segurança e cálculo de partilha.',
+        body: 'Recolhemos apenas nome, e-mail, número de telefone (+244), fotografia opcional e registos de viagem estritamente necessários para segurança e cálculo de partilha.',
       },
       {
         title: '3. Localização e contactos de confiança',
@@ -227,7 +234,7 @@ export const ptAO = {
     emailInvalid: 'Indica um endereço de e-mail válido.',
     passwordMin: 'A palavra-passe deve ter pelo menos 8 caracteres.',
     passwordsMismatch: 'As palavras-passe não coincidem.',
-    otpInvalid: 'O código OTP deve ter exatamente 6 dígitos numéricos.',
+    emailCodeInvalid: 'O código de confirmação deve ter exatamente 6 dígitos numéricos.',
     consentRequired: 'Tens de aceitar os Termos e a Política de Privacidade para continuar.',
     deleteKeywordMismatch: 'Escreve exatamente ELIMINAR para confirmar.',
   },
@@ -240,7 +247,7 @@ export const ptAO = {
       login: 'Entrar',
       register: 'Criar conta',
       forgotPassword: 'Recuperar senha',
-      verifyOtp: 'Verificar OTP',
+      verifyEmail: 'Confirmar e-mail',
       profile: 'Perfil',
       legal: 'Termos e Privacidade',
     },

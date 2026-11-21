@@ -2,11 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   registerUser,
+  registerUserWithClient,
   loginUser,
-  sendPhoneOtp,
-  sendPhoneOtpWithClient,
-  verifyPhoneOtp,
-  verifyPhoneOtpWithClient,
+  loginUserWithClient,
+  sendEmailAuthLink,
+  sendEmailAuthLinkWithClient,
+  sendEmailVerificationCode,
+  sendEmailVerificationCodeWithClient,
+  verifyEmailCode,
+  verifyEmailCodeWithClient,
   fetchMyProfile,
   fetchPublicProfilesForMatching,
   deleteMyAccount,
@@ -21,10 +25,11 @@ function makeDbProfile(overrides: Partial<DbProfileRow> = {}): DbProfileRow {
     id: 'user-1',
     full_name: 'Joana Mateus',
     phone: '+244923111222',
-    email: null,
+    email: 'joana@kambago.ao',
     role: 'passenger',
     account_status: 'pendente',
     phone_verified: false,
+    email_verified: false,
     avatar_path: null,
     data_saver_enabled: false,
     intt_registration_number: null,
@@ -39,50 +44,120 @@ function makeDbProfile(overrides: Partial<DbProfileRow> = {}): DbProfileRow {
 }
 
 function makeMockSupabaseClient(options: {
+  signUpError?: string;
+  signUpIdentities?: Array<{ id: string }>;
+  signInError?: string;
+  signInWithOtpError?: string;
+  authEmailConfirmedAt?: string | null;
   resendError?: string;
   verifyOtpError?: string;
   confirmRow?: DbProfileRow | null;
   confirmError?: string;
   myProfileRow?: DbProfileRow | null;
+  capturedCalls?: {
+    signUpArgs?: unknown;
+    signInArgs?: unknown;
+    signInWithOtpArgs?: unknown;
+    resendArgs?: unknown;
+    verifyOtpArgs?: unknown;
+    rpcNames: string[];
+  };
 }) {
   return {
     auth: {
-      resend: async () => ({
-        data: {},
-        error: options.resendError ? { message: options.resendError } : null,
-      }),
-      verifyOtp: async () => ({
-        data: {},
-        error: options.verifyOtpError ? { message: options.verifyOtpError } : null,
-      }),
+      signUp: async (args: unknown) => {
+        if (options.capturedCalls) {
+          options.capturedCalls.signUpArgs = args;
+        }
+        return {
+          data: {
+            user: options.signUpError
+              ? null
+              : {
+                  id: 'user-1',
+                  identities: options.signUpIdentities ?? [{ id: 'ident-1' }],
+                },
+          },
+          error: options.signUpError ? { message: options.signUpError } : null,
+        };
+      },
+      signInWithPassword: async (args: unknown) => {
+        if (options.capturedCalls) {
+          options.capturedCalls.signInArgs = args;
+        }
+        return {
+          data: {
+            user: options.signInError
+              ? null
+              : {
+                  id: 'user-1',
+                  email_confirmed_at:
+                    options.authEmailConfirmedAt === undefined
+                      ? '2026-11-20T00:00:00Z'
+                      : options.authEmailConfirmedAt,
+                },
+          },
+          error: options.signInError ? { message: options.signInError } : null,
+        };
+      },
+      signInWithOtp: async (args: unknown) => {
+        if (options.capturedCalls) {
+          options.capturedCalls.signInWithOtpArgs = args;
+        }
+        return {
+          data: { user: null, session: null },
+          error: options.signInWithOtpError ? { message: options.signInWithOtpError } : null,
+        };
+      },
+      resend: async (args: unknown) => {
+        if (options.capturedCalls) {
+          options.capturedCalls.resendArgs = args;
+        }
+        return {
+          data: {},
+          error: options.resendError ? { message: options.resendError } : null,
+        };
+      },
+      verifyOtp: async (args: unknown) => {
+        if (options.capturedCalls) {
+          options.capturedCalls.verifyOtpArgs = args;
+        }
+        return {
+          data: {},
+          error: options.verifyOtpError ? { message: options.verifyOtpError } : null,
+        };
+      },
       getUser: async () => ({
         data: { user: { id: 'user-1' } },
         error: null,
       }),
     },
-    rpc: (fnName: string) => ({
-      single: async <T>() => {
-        if (fnName === 'confirm_phone_verification') {
-          return {
-            data: (options.confirmRow ?? null) as T | null,
-            error: options.confirmError ? { message: options.confirmError } : null,
-          };
-        }
-        if (fnName === 'get_my_profile') {
-          return {
-            data: (options.myProfileRow ?? options.confirmRow ?? null) as T | null,
-            error: null,
-          };
-        }
-        return { data: null, error: { message: 'RPC desconhecida' } };
-      },
-    }),
+    rpc: (fnName: string) => {
+      options.capturedCalls?.rpcNames.push(fnName);
+      return {
+        single: async <T>() => {
+          if (fnName === 'confirm_email_verification') {
+            return {
+              data: (options.confirmRow ?? null) as T | null,
+              error: options.confirmError ? { message: options.confirmError } : null,
+            };
+          }
+          if (fnName === 'get_my_profile') {
+            return {
+              data: (options.myProfileRow ?? options.confirmRow ?? null) as T | null,
+              error: null,
+            };
+          }
+          return { data: null, error: { message: 'RPC desconhecida' } };
+        },
+      };
+    },
     storage: {
       from: () => ({
         createSignedUrl: async () => ({ data: { signedUrl: null } }),
       }),
     },
-  } as unknown as Parameters<typeof verifyPhoneOtpWithClient>[0];
+  } as unknown as Parameters<typeof verifyEmailCodeWithClient>[0];
 }
 
 test('integration readiness reports pending configuration when env vars are absent and reads notification config dynamically', () => {
@@ -91,7 +166,6 @@ test('integration readiness reports pending configuration when env vars are abse
 
   const readiness = getIntegrationReadiness();
   assert.equal(readiness.supabaseConfigured, false);
-  assert.equal(readiness.smsConfigured, false);
   assert.equal(readiness.notificationsConfigured, false);
 
   process.env.EXPO_PUBLIC_EXPO_PROJECT_ID = 'eas-project-id-demo';
@@ -108,6 +182,7 @@ test('auth operations honestly return pending_configuration without env keys', a
   const reg = await registerUser({
     fullName: 'Joana Mateus',
     phone: '+244923111222',
+    email: 'joana@kambago.ao',
     password: 'password123',
     role: 'passenger',
     acceptedLegalTerms: true,
@@ -116,22 +191,26 @@ test('auth operations honestly return pending_configuration without env keys', a
   assert.equal(reg.status, 'pending_configuration');
 
   const login = await loginUser({
-    identifier: '+244923111222',
+    email: 'joana@kambago.ao',
     password: 'password123',
   });
   assert.equal(login.ok, false);
   assert.equal(login.status, 'pending_configuration');
 
-  const otpSend = await sendPhoneOtp('+244923111222');
-  assert.equal(otpSend.ok, false);
-  assert.equal(otpSend.status, 'pending_configuration');
+  const emailResend = await sendEmailVerificationCode('joana@kambago.ao');
+  assert.equal(emailResend.ok, false);
+  assert.equal(emailResend.status, 'pending_configuration');
 
-  const otpVerify = await verifyPhoneOtp({
-    phone: '+244923111222',
+  const emailLink = await sendEmailAuthLink('joana@kambago.ao');
+  assert.equal(emailLink.ok, false);
+  assert.equal(emailLink.status, 'pending_configuration');
+
+  const emailVerify = await verifyEmailCode({
+    email: 'joana@kambago.ao',
     code: '123456',
   });
-  assert.equal(otpVerify.ok, false);
-  assert.equal(otpVerify.status, 'pending_configuration');
+  assert.equal(emailVerify.ok, false);
+  assert.equal(emailVerify.status, 'pending_configuration');
 
   const profile = await fetchMyProfile();
   assert.equal(profile.ok, false);
@@ -146,50 +225,181 @@ test('auth operations honestly return pending_configuration without env keys', a
   assert.equal(del.status, 'pending_configuration');
 });
 
-test('sendPhoneOtpWithClient uses Supabase Auth resend and maps unconfigured provider honestly', async () => {
-  const okClient = makeMockSupabaseClient({});
-  const okRes = await sendPhoneOtpWithClient(okClient, '923111222');
-  assert.equal(okRes.ok, true);
-  assert.equal(okRes.message, ptAO.auth.feedback.otpResent);
-
-  const pendingClient = makeMockSupabaseClient({
-    resendError: 'Unsupported phone provider',
+test('registerUserWithClient normalizes email/phone and detects already-registered email identities', async () => {
+  const capturedCalls = { rpcNames: [] as string[] };
+  const okClient = makeMockSupabaseClient({ capturedCalls });
+  const okRes = await registerUserWithClient(okClient, {
+    fullName: 'Joana Mateus',
+    phone: '923111222',
+    email: '  Joana@KambaGo.ao ',
+    password: 'password123',
+    role: 'passenger',
+    acceptedLegalTerms: true,
   });
-  const pendingRes = await sendPhoneOtpWithClient(pendingClient, '923111222');
-  assert.equal(pendingRes.ok, false);
-  assert.equal(pendingRes.status, 'pending_configuration');
-  assert.equal(pendingRes.message, ptAO.setupStatus.smsMissing);
+  assert.equal(okRes.ok, true);
+  assert.equal(okRes.data?.userId, 'user-1');
+  assert.equal(okRes.message, ptAO.auth.feedback.registerSuccess);
+  const signUpArgs = (capturedCalls as { signUpArgs?: { email: string; options: { data: { phone: string } } } }).signUpArgs;
+  assert.equal(signUpArgs?.email, 'joana@kambago.ao');
+  assert.equal(signUpArgs?.options.data.phone, '+244923111222');
+
+  const emailOnlyRes = await registerUserWithClient(okClient, {
+    fullName: 'Joana Mateus',
+    email: 'Joana.Email@KambaGo.ao',
+    password: 'password123',
+    role: 'passenger',
+    acceptedLegalTerms: true,
+  });
+  assert.equal(emailOnlyRes.ok, true);
+  const emailOnlySignUpArgs = (capturedCalls as { signUpArgs?: { email: string; options: { data: Record<string, unknown> } } }).signUpArgs;
+  assert.equal(emailOnlySignUpArgs?.email, 'joana.email@kambago.ao');
+  assert.equal('phone' in (emailOnlySignUpArgs?.options.data ?? {}), false);
+
+  const duplicateClient = makeMockSupabaseClient({ signUpIdentities: [] });
+  const dupRes = await registerUserWithClient(duplicateClient, {
+    fullName: 'Joana Mateus',
+    phone: '923111222',
+    email: 'joana@kambago.ao',
+    password: 'password123',
+    role: 'passenger',
+    acceptedLegalTerms: true,
+  });
+  assert.equal(dupRes.ok, false);
+  assert.equal(dupRes.requiresEmailVerification, true);
+  assert.equal(dupRes.message, ptAO.auth.feedback.emailAlreadyRegistered);
 });
 
-test('verifyPhoneOtpWithClient activates passenger only when confirm_phone_verification succeeds', async () => {
+test('sendEmailAuthLinkWithClient sends email authentication link via Supabase auth.signInWithOtp', async () => {
+  const invalidRes = await sendEmailAuthLinkWithClient(
+    makeMockSupabaseClient({}),
+    'email-invalido'
+  );
+  assert.equal(invalidRes.ok, false);
+  assert.equal(invalidRes.status, 'validation_error');
+  assert.equal(invalidRes.message, ptAO.validation.emailInvalid);
+
+  const capturedCalls = { rpcNames: [] as string[] };
+  const okClient = makeMockSupabaseClient({ capturedCalls });
+  const okRes = await sendEmailAuthLinkWithClient(
+    okClient,
+    '  Joana@KambaGo.ao ',
+    'https://kambago.ao/auth/callback'
+  );
+  assert.equal(okRes.ok, true);
+  assert.equal(okRes.message, ptAO.auth.feedback.emailLinkSent);
+  assert.deepEqual(
+    (capturedCalls as { signInWithOtpArgs?: unknown }).signInWithOtpArgs,
+    {
+      email: 'joana@kambago.ao',
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: 'https://kambago.ao/auth/callback',
+      },
+    }
+  );
+
+  const errClient = makeMockSupabaseClient({
+    signInWithOtpError: 'Email rate limit exceeded',
+  });
+  const errRes = await sendEmailAuthLinkWithClient(errClient, 'joana@kambago.ao');
+  assert.equal(errRes.ok, false);
+  assert.equal(errRes.status, 'error');
+  assert.equal(errRes.message, 'Email rate limit exceeded');
+});
+
+test('loginUserWithClient signs in verified users and prompts email verification when unconfirmed', async () => {
+  const verifiedProfile = makeDbProfile({
+    account_status: 'ativa',
+    email_verified: true,
+  });
+  const okClient = makeMockSupabaseClient({ myProfileRow: verifiedProfile });
+  const okRes = await loginUserWithClient(okClient, {
+    email: '  Joana@KambaGo.ao ',
+    password: 'password123',
+  });
+  assert.equal(okRes.ok, true);
+  assert.equal(okRes.data?.emailVerified, true);
+  assert.equal(okRes.message, ptAO.auth.feedback.loginSuccess);
+
+  const unconfirmedClient = makeMockSupabaseClient({
+    signInError: 'Email not confirmed',
+  });
+  const unconfirmedRes = await loginUserWithClient(unconfirmedClient, {
+    email: 'joana@kambago.ao',
+    password: 'password123',
+  });
+  assert.equal(unconfirmedRes.ok, false);
+  assert.equal(unconfirmedRes.requiresEmailVerification, true);
+  assert.equal(unconfirmedRes.message, ptAO.auth.feedback.loginEmailNotConfirmed);
+});
+
+test('sendEmailVerificationCodeWithClient uses Supabase Auth signup email resend', async () => {
+  const capturedCalls = { rpcNames: [] as string[] };
+  const okClient = makeMockSupabaseClient({ capturedCalls });
+  const okRes = await sendEmailVerificationCodeWithClient(okClient, '  Joana@KambaGo.ao ');
+  assert.equal(okRes.ok, true);
+  assert.equal(okRes.message, ptAO.auth.feedback.emailCodeResent);
+  assert.deepEqual(
+    (capturedCalls as { resendArgs?: unknown }).resendArgs,
+    { type: 'signup', email: 'joana@kambago.ao' }
+  );
+
+  const errClient = makeMockSupabaseClient({
+    resendError: 'Rate limit exceeded',
+  });
+  const errRes = await sendEmailVerificationCodeWithClient(errClient, 'joana@kambago.ao');
+  assert.equal(errRes.ok, false);
+  assert.equal(errRes.status, 'error');
+  assert.equal(errRes.message, 'Rate limit exceeded');
+});
+
+test('verifyEmailCodeWithClient activates passenger only when verifyOtp and confirm_email_verification succeed', async () => {
+  const capturedCalls = { rpcNames: [] as string[] };
   const activePassenger = makeDbProfile({
     role: 'passenger',
     account_status: 'ativa',
-    phone_verified: true,
+    email_verified: true,
   });
   const client = makeMockSupabaseClient({
     confirmRow: activePassenger,
     myProfileRow: activePassenger,
+    capturedCalls,
   });
 
-  const res = await verifyPhoneOtpWithClient(client, {
-    phone: '923111222',
+  const res = await verifyEmailCodeWithClient(client, {
+    email: '  Joana@KambaGo.ao ',
     code: '123456',
   });
   assert.equal(res.ok, true);
   assert.equal(res.data?.accountStatus, 'ativa');
-  assert.equal(res.data?.phoneVerified, true);
-  assert.equal(res.message, ptAO.auth.feedback.otpSuccessPassengerActive);
+  assert.equal(res.data?.emailVerified, true);
+  assert.equal(res.message, ptAO.auth.feedback.emailVerifySuccessPassengerActive);
+  assert.deepEqual(
+    (capturedCalls as { verifyOtpArgs?: unknown }).verifyOtpArgs,
+    { email: 'joana@kambago.ao', token: '123456', type: 'signup' }
+  );
+  assert.deepEqual(capturedCalls.rpcNames, ['confirm_email_verification', 'get_my_profile']);
 });
 
-test('verifyPhoneOtpWithClient fails honestly when confirm_phone_verification RPC fails', async () => {
+test('verifyEmailCodeWithClient fails honestly when verifyOtp or confirm_email_verification RPC fails', async () => {
+  const otpFailClient = makeMockSupabaseClient({
+    verifyOtpError: 'Token has expired or is invalid',
+  });
+  const otpFailRes = await verifyEmailCodeWithClient(otpFailClient, {
+    email: 'joana@kambago.ao',
+    code: '000000',
+  });
+  assert.equal(otpFailRes.ok, false);
+  assert.equal(otpFailRes.status, 'error');
+  assert.equal(otpFailRes.message, 'Token has expired or is invalid');
+
   const client = makeMockSupabaseClient({
     confirmRow: null,
-    confirmError: 'Número de telefone ainda não confirmado no servidor de autenticação.',
+    confirmError: 'Endereço de e-mail ainda não confirmado no servidor de autenticação.',
   });
 
-  const res = await verifyPhoneOtpWithClient(client, {
-    phone: '+244923111222',
+  const res = await verifyEmailCodeWithClient(client, {
+    email: 'joana@kambago.ao',
     code: '123456',
   });
   assert.equal(res.ok, false);
@@ -197,52 +407,53 @@ test('verifyPhoneOtpWithClient fails honestly when confirm_phone_verification RP
   assert.equal(res.data, undefined);
 });
 
-test('verifyPhoneOtpWithClient keeps driver pending and suspended account suspended', async () => {
+test('verifyEmailCodeWithClient keeps driver pending and suspended account suspended', async () => {
   const driverRow = makeDbProfile({
     role: 'driver',
     account_status: 'pendente',
-    phone_verified: true,
+    email_verified: true,
   });
   const driverClient = makeMockSupabaseClient({
     confirmRow: driverRow,
     myProfileRow: driverRow,
   });
-  const driverRes = await verifyPhoneOtpWithClient(driverClient, {
-    phone: '+244923111222',
+  const driverRes = await verifyEmailCodeWithClient(driverClient, {
+    email: 'joana@kambago.ao',
     code: '123456',
   });
   assert.equal(driverRes.ok, true);
   assert.equal(driverRes.data?.accountStatus, 'pendente');
-  assert.equal(driverRes.message, ptAO.auth.feedback.otpSuccessDriverPending);
+  assert.equal(driverRes.message, ptAO.auth.feedback.emailVerifySuccessDriverPending);
 
   const suspendedRow = makeDbProfile({
     role: 'passenger',
     account_status: 'suspensa',
-    phone_verified: true,
+    email_verified: true,
   });
   const suspendedClient = makeMockSupabaseClient({
     confirmRow: suspendedRow,
     myProfileRow: suspendedRow,
   });
-  const suspendedRes = await verifyPhoneOtpWithClient(suspendedClient, {
-    phone: '+244923111222',
+  const suspendedRes = await verifyEmailCodeWithClient(suspendedClient, {
+    email: 'joana@kambago.ao',
     code: '123456',
   });
   assert.equal(suspendedRes.ok, true);
   assert.equal(suspendedRes.data?.accountStatus, 'suspensa');
-  assert.equal(suspendedRes.message, ptAO.auth.feedback.otpAccountSuspended);
+  assert.equal(suspendedRes.message, ptAO.auth.feedback.emailVerifyAccountSuspended);
 });
 
-test('mapDbProfileToUserProfile maps snake_case database rows accurately', () => {
+test('mapDbProfileToUserProfile maps snake_case database rows accurately including emailVerified', () => {
   const mapped = mapDbProfileToUserProfile(
     {
       id: 'user-1',
       full_name: 'Carlos António',
       phone: '+244923555666',
-      email: null,
+      email: 'carlos@kambago.ao',
       role: 'driver',
       account_status: 'pendente',
       phone_verified: false,
+      email_verified: true,
       avatar_path: 'user-1/avatar.jpg',
       data_saver_enabled: true,
       intt_registration_number: null,
@@ -257,6 +468,8 @@ test('mapDbProfileToUserProfile maps snake_case database rows accurately', () =>
   );
 
   assert.equal(mapped.fullName, 'Carlos António');
+  assert.equal(mapped.email, 'carlos@kambago.ao');
+  assert.equal(mapped.emailVerified, true);
   assert.equal(mapped.accountStatus, 'pendente');
   assert.equal(mapped.dataSaverEnabled, true);
   assert.equal(mapped.inttVerificationStatus, 'pendente_confirmacao');

@@ -2,18 +2,17 @@ export type AccountStatus = 'pendente' | 'ativa' | 'suspensa';
 
 export type UserRole = 'passenger' | 'driver' | 'admin';
 
-export type SmsProviderName = 'pending' | 'twilio' | 'africastalking';
-
 export type MapsProviderName = 'google' | 'mapbox';
 
 export interface UserProfile {
   id: string;
   fullName: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   role: UserRole;
   accountStatus: AccountStatus;
   phoneVerified: boolean;
+  emailVerified: boolean;
   avatarPath: string | null;
   avatarSignedUrl: string | null;
   dataSaverEnabled: boolean;
@@ -31,23 +30,24 @@ export interface AuthActionResult<T = void> {
   status: 'success' | 'pending_configuration' | 'validation_error' | 'error';
   message: string;
   data?: T;
+  requiresEmailVerification?: boolean;
 }
 
 export interface RegisterPayload {
   fullName: string;
-  phone: string;
-  email?: string;
+  phone?: string;
+  email: string;
   password: string;
   role: 'passenger' | 'driver';
   acceptedLegalTerms: boolean;
 }
 
 export interface LoginPayload {
-  identifier: string;
+  email: string;
   password: string;
 }
 
-export interface OtpVerifyPayload {
-  phone: string;
+export interface EmailVerifyPayload {
+  email: string;
   code: string;
 }

@@ -26,7 +26,8 @@ export default function ProfileScreen() {
       {profile && (
         <View style={styles.card}>
           <Text style={styles.label}>{profile.fullName}</Text>
-          <Text style={styles.body}>{profile.phone}</Text>
+          {profile.email ? <Text style={styles.body}>{profile.email}</Text> : null}
+          {profile.phone ? <Text style={styles.body}>{profile.phone}</Text> : null}
           <Text style={styles.body}>
             {ptAO.profile.accountStatusLabel}: {ptAO.profile.statuses[profile.accountStatus].label}
           </Text>

@@ -13,9 +13,13 @@ export default function LoginScreen() {
   const router = useRouter();
   const setProfile = useAuthStore((s) => s.setProfile);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const { control, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { identifier: '', password: '' },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -30,32 +34,55 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{ptAO.auth.loginTitle}</Text>
+      <Text style={styles.subtitle}>{ptAO.auth.loginSubtitle}</Text>
       {feedback && <Text style={styles.feedback}>{feedback}</Text>}
 
       <Controller
         control={control}
-        name="identifier"
+        name="email"
         render={({ field: { onChange, value } }) => (
-          <TextInput style={styles.input} placeholder={ptAO.auth.fields.phonePlaceholder} value={value} onChangeText={onChange} />
+          <TextInput
+            style={styles.input}
+            placeholder={ptAO.auth.fields.emailPlaceholder}
+            value={value}
+            onChangeText={onChange}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         )}
       />
-      {errors.identifier && <Text style={styles.error}>{errors.identifier.message}</Text>}
+      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
       <Controller
         control={control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <TextInput style={styles.input} placeholder={ptAO.auth.fields.passwordPlaceholder} value={value} onChangeText={onChange} secureTextEntry />
+          <TextInput
+            style={styles.input}
+            placeholder={ptAO.auth.fields.passwordPlaceholder}
+            value={value}
+            onChangeText={onChange}
+            secureTextEntry
+          />
         )}
       />
       {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
 
-      <Pressable style={styles.button} disabled={isSubmitting} onPress={() => void handleSubmit(onSubmit)()}>
+      <Pressable
+        style={styles.button}
+        disabled={isSubmitting}
+        onPress={() => void handleSubmit(onSubmit)()}
+      >
         <Text style={styles.buttonText}>{ptAO.auth.actions.submitLogin}</Text>
       </Pressable>
 
       <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
         <Text style={styles.link}>{ptAO.auth.actions.forgotLink}</Text>
+      </Pressable>
+
+      <Pressable onPress={() => router.push('/(auth)/verify-email')}>
+        <Text style={styles.link}>{ptAO.auth.actions.verifyEmailLink}</Text>
       </Pressable>
     </View>
   );
@@ -64,10 +91,27 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background, padding: 20, gap: 12 },
   title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
-  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 12, padding: 14 },
+  subtitle: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: KAMBAGO_COLORS.border,
+    borderRadius: 12,
+    padding: 14,
+  },
   error: { color: KAMBAGO_COLORS.danger, fontSize: 13 },
-  feedback: { backgroundColor: KAMBAGO_COLORS.amberSurface, color: KAMBAGO_COLORS.amberText, padding: 12, borderRadius: 10 },
-  button: { backgroundColor: KAMBAGO_COLORS.teal, paddingVertical: 15, borderRadius: 14, alignItems: 'center' },
+  feedback: {
+    backgroundColor: KAMBAGO_COLORS.amberSurface,
+    color: KAMBAGO_COLORS.amberText,
+    padding: 12,
+    borderRadius: 10,
+  },
+  button: {
+    backgroundColor: KAMBAGO_COLORS.teal,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
   buttonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
   link: { color: KAMBAGO_COLORS.navy, fontWeight: '600', textAlign: 'center', marginTop: 8 },
 });

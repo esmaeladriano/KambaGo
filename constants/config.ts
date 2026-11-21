@@ -1,4 +1,4 @@
-import type { MapsProviderName, SmsProviderName } from '../types/auth';
+import type { MapsProviderName } from '../types/auth';
 
 export interface AppRuntimeConfig {
   supabaseUrl: string;
@@ -6,8 +6,6 @@ export interface AppRuntimeConfig {
   isSupabaseConfigured: boolean;
   mapsProvider: MapsProviderName;
   mapsApiKeyConfigured: boolean;
-  smsProvider: SmsProviderName;
-  isSmsConfigured: boolean;
   expoProjectId: string;
   isNotificationsConfigured: boolean;
   appEnv: 'development' | 'staging' | 'production';
@@ -51,10 +49,6 @@ export function readAppConfig(): AppRuntimeConfig {
       ? readEnvValue(['EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN', 'VITE_MAPBOX_PUBLIC_TOKEN'])
       : readEnvValue(['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY', 'VITE_GOOGLE_MAPS_API_KEY']);
 
-  const rawSmsProvider = readEnvValue(['EXPO_PUBLIC_SMS_PROVIDER', 'VITE_SMS_PROVIDER']);
-  const smsProvider: SmsProviderName =
-    rawSmsProvider === 'twilio' || rawSmsProvider === 'africastalking' ? rawSmsProvider : 'pending';
-
   const expoProjectId = readEnvValue(['EXPO_PUBLIC_EXPO_PROJECT_ID', 'VITE_EXPO_PROJECT_ID']);
 
   const rawEnv = readEnvValue(['EXPO_PUBLIC_APP_ENV', 'NODE_ENV']);
@@ -67,8 +61,6 @@ export function readAppConfig(): AppRuntimeConfig {
     isSupabaseConfigured: Boolean(supabaseUrl && supabaseAnonKey),
     mapsProvider,
     mapsApiKeyConfigured: Boolean(mapsKey),
-    smsProvider,
-    isSmsConfigured: smsProvider !== 'pending',
     expoProjectId,
     isNotificationsConfigured: Boolean(expoProjectId),
     appEnv,
