@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  isMockAuthActive,
   registerUser,
   registerUserWithClient,
   loginUser,
   loginUserWithClient,
+  requestPasswordReset,
   sendEmailAuthLink,
   sendEmailAuthLinkWithClient,
   sendEmailVerificationCode,
@@ -13,9 +15,15 @@ import {
   verifyEmailCodeWithClient,
   fetchMyProfile,
   fetchPublicProfilesForMatching,
+  updateProfilePreferences,
   deleteMyAccount,
+  signOutUser,
   mapDbProfileToUserProfile,
 } from './authService';
+import {
+  MOCK_EMAIL_VERIFICATION_CODE,
+  resetMockAuthState,
+} from './mockAuthService';
 import { getIntegrationReadiness } from '../supabase/client';
 import type { DbProfileRow } from '../../types/database';
 import { ptAO } from '../../locales/pt-AO';
@@ -178,50 +186,146 @@ test('integration readiness reports pending configuration when env vars are abse
   }
 });
 
-test('auth operations honestly return pending_configuration without env keys', async () => {
+test('auth operations strictly return pending_configuration in production without env keys', async () => {
+  const prevAppEnv = process.env.EXPO_PUBLIC_APP_ENV;
+  process.env.EXPO_PUBLIC_APP_ENV = 'production';
+
+  try {
+    assert.equal(isMockAuthActive(), false);
+
+    const reg = await registerUser({
+      fullName: 'Joana Mateus',
+      email: 'joana@kambago.ao',
+      password: 'password123',
+      role: 'passenger',
+      acceptedLegalTerms: true,
+    });
+    assert.equal(reg.ok, false);
+    assert.equal(reg.status, 'pending_configuration');
+
+    const login = await loginUser({
+      email: 'joana@kambago.ao',
+      password: 'password123',
+    });
+    assert.equal(login.ok, false);
+    assert.equal(login.status, 'pending_configuration');
+
+    const emailResend = await sendEmailVerificationCode('joana@kambago.ao');
+    assert.equal(emailResend.ok, false);
+    assert.equal(emailResend.status, 'pending_configuration');
+
+    const emailLink = await sendEmailAuthLink('joana@kambago.ao');
+    assert.equal(emailLink.ok, false);
+    assert.equal(emailLink.status, 'pending_configuration');
+
+    const emailVerify = await verifyEmailCode({
+      email: 'joana@kambago.ao',
+      code: '123456',
+    });
+    assert.equal(emailVerify.ok, false);
+    assert.equal(emailVerify.status, 'pending_configuration');
+
+    const profile = await fetchMyProfile();
+    assert.equal(profile.ok, false);
+    assert.equal(profile.status, 'pending_configuration');
+
+    const publicMatches = await fetchPublicProfilesForMatching(['user-1']);
+    assert.equal(publicMatches.ok, false);
+    assert.equal(publicMatches.status, 'pending_configuration');
+
+    const del = await deleteMyAccount();
+    assert.equal(del.ok, false);
+    assert.equal(del.status, 'pending_configuration');
+  } finally {
+    if (prevAppEnv === undefined) {
+      delete process.env.EXPO_PUBLIC_APP_ENV;
+    } else {
+      process.env.EXPO_PUBLIC_APP_ENV = prevAppEnv;
+    }
+  }
+});
+
+test('mock auth fallback allows full UI auth and profile flow in development when Supabase env vars are missing', async () => {
+  resetMockAuthState();
+  assert.equal(isMockAuthActive(), true);
+
   const reg = await registerUser({
     fullName: 'Joana Mateus',
-    email: 'joana@kambago.ao',
+    email: 'Joana@KambaGo.ao',
     password: 'password123',
     role: 'passenger',
     acceptedLegalTerms: true,
   });
-  assert.equal(reg.ok, false);
-  assert.equal(reg.status, 'pending_configuration');
+  assert.equal(reg.ok, true);
+  assert.ok(reg.data?.userId.startsWith('mock-user-'));
 
-  const login = await loginUser({
+  // Sem confirmar e-mail, login pede confirmação
+  const unconfirmedLogin = await loginUser({
     email: 'joana@kambago.ao',
     password: 'password123',
   });
-  assert.equal(login.ok, false);
-  assert.equal(login.status, 'pending_configuration');
+  assert.equal(unconfirmedLogin.ok, false);
+  assert.equal(unconfirmedLogin.requiresEmailVerification, true);
 
-  const emailResend = await sendEmailVerificationCode('joana@kambago.ao');
-  assert.equal(emailResend.ok, false);
-  assert.equal(emailResend.status, 'pending_configuration');
-
-  const emailLink = await sendEmailAuthLink('joana@kambago.ao');
-  assert.equal(emailLink.ok, false);
-  assert.equal(emailLink.status, 'pending_configuration');
-
-  const emailVerify = await verifyEmailCode({
+  // Código errado é recusado
+  const wrongCode = await verifyEmailCode({
     email: 'joana@kambago.ao',
-    code: '123456',
+    code: '000000',
   });
-  assert.equal(emailVerify.ok, false);
-  assert.equal(emailVerify.status, 'pending_configuration');
+  assert.equal(wrongCode.ok, false);
 
-  const profile = await fetchMyProfile();
-  assert.equal(profile.ok, false);
-  assert.equal(profile.status, 'pending_configuration');
+  // Código de teste ativa passageiro
+  const verified = await verifyEmailCode({
+    email: 'joana@kambago.ao',
+    code: MOCK_EMAIL_VERIFICATION_CODE,
+  });
+  assert.equal(verified.ok, true);
+  assert.equal(verified.data?.emailVerified, true);
+  assert.equal(verified.data?.accountStatus, 'ativa');
 
-  const publicMatches = await fetchPublicProfilesForMatching(['user-1']);
-  assert.equal(publicMatches.ok, false);
-  assert.equal(publicMatches.status, 'pending_configuration');
+  // Atualização de perfil funciona em modo mock
+  const updated = await updateProfilePreferences(verified.data!.id, {
+    fullName: 'Joana M. Mateus',
+    email: 'joana@kambago.ao',
+    dataSaverEnabled: true,
+  });
+  assert.equal(updated.ok, true);
+  assert.equal(updated.data?.fullName, 'Joana M. Mateus');
+  assert.equal(updated.data?.dataSaverEnabled, true);
 
-  const del = await deleteMyAccount();
-  assert.equal(del.ok, false);
-  assert.equal(del.status, 'pending_configuration');
+  await signOutUser();
+  const loggedIn = await loginUser({
+    email: 'joana@kambago.ao',
+    password: 'password123',
+  });
+  assert.equal(loggedIn.ok, true);
+  assert.equal(loggedIn.data?.fullName, 'Joana M. Mateus');
+
+  // Motorista permanece pendente após confirmar e-mail
+  const driverReg = await registerUser({
+    fullName: 'Carlos Motorista',
+    email: 'carlos@kambago.ao',
+    password: 'password123',
+    role: 'driver',
+    acceptedLegalTerms: true,
+  });
+  assert.equal(driverReg.ok, true);
+
+  const driverVerified = await verifyEmailCode({
+    email: 'carlos@kambago.ao',
+    code: MOCK_EMAIL_VERIFICATION_CODE,
+  });
+  assert.equal(driverVerified.ok, true);
+  assert.equal(driverVerified.data?.emailVerified, true);
+  assert.equal(driverVerified.data?.accountStatus, 'pendente');
+
+  const resetRes = await requestPasswordReset('carlos@kambago.ao');
+  assert.equal(resetRes.ok, true);
+
+  const delRes = await deleteMyAccount();
+  assert.equal(delRes.ok, true);
+
+  resetMockAuthState();
 });
 
 test('registerUserWithClient normalizes email/phone and detects already-registered email identities', async () => {
@@ -373,7 +477,7 @@ test('verifyEmailCodeWithClient activates passenger only when verifyOtp and conf
   assert.equal(res.message, ptAO.auth.feedback.emailVerifySuccessPassengerActive);
   assert.deepEqual(
     (capturedCalls as { verifyOtpArgs?: unknown }).verifyOtpArgs,
-    { email: 'joana@kambago.ao', token: '123456', type: 'signup' }
+    { email: 'joana@kambago.ao', token: '123456', type: 'email' }
   );
   assert.deepEqual(capturedCalls.rpcNames, ['confirm_email_verification', 'get_my_profile']);
 });

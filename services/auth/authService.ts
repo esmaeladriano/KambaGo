@@ -1,3 +1,4 @@
+import { readAppConfig } from '../../constants/config';
 import { ptAO } from '../../locales/pt-AO';
 import type {
   AuthActionResult,
@@ -8,9 +9,26 @@ import type {
 } from '../../types/auth';
 import type { DbProfileRow, PublicProfileInfoRow } from '../../types/database';
 import { getSupabaseClient } from '../supabase/client';
+import { getMockSupabaseAuthClient } from './mockAuthService';
 
 const AVATAR_BUCKET = 'profile-avatars';
 const SIGNED_URL_TTL_SECONDS = 300;
+
+export function isMockAuthActive(): boolean {
+  const config = readAppConfig();
+  return !config.isSupabaseConfigured && config.appEnv !== 'production';
+}
+
+function resolveAuthClient(): SupabaseAuthLike | null {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    return supabase;
+  }
+  if (isMockAuthActive()) {
+    return getMockSupabaseAuthClient() as unknown as SupabaseAuthLike;
+  }
+  return null;
+}
 
 export function mapDbProfileToUserProfile(
   row: DbProfileRow,
@@ -41,7 +59,7 @@ export function mapDbProfileToUserProfile(
 export async function registerUser(
   payload: RegisterPayload
 ): Promise<AuthActionResult<{ userId: string }>> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -116,7 +134,7 @@ function isUnconfirmedEmailAuthError(message: string | undefined): boolean {
 export async function loginUser(
   payload: LoginPayload
 ): Promise<AuthActionResult<UserProfile>> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -216,7 +234,7 @@ export async function requestPasswordReset(
     };
   }
 
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -245,7 +263,7 @@ export async function sendEmailAuthLink(
   email: string,
   emailRedirectTo?: string
 ): Promise<AuthActionResult> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -295,7 +313,7 @@ export async function sendEmailAuthLinkWithClient(
 }
 
 export async function sendEmailVerificationCode(email: string): Promise<AuthActionResult> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -352,7 +370,7 @@ export function getEmailConfirmationFeedback(
 export async function verifyEmailCode(
   payload: EmailVerifyPayload
 ): Promise<AuthActionResult<UserProfile>> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -375,7 +393,7 @@ export async function verifyEmailCodeWithClient(
   const { error: otpError } = await supabase.auth.verifyOtp({
     email: normalizedEmail,
     token: payload.code.trim(),
-    type: 'signup',
+    type: 'email',
   });
 
   if (otpError) {
@@ -422,7 +440,7 @@ export async function verifyEmailCodeWithClient(
 }
 
 export async function fetchMyProfile(): Promise<AuthActionResult<UserProfile>> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -479,7 +497,7 @@ export async function uploadPrivateAvatar(
   fileBlob: Blob,
   mimeType: string
 ): Promise<AuthActionResult<{ avatarPath: string; signedUrl: string | null }>> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -540,7 +558,7 @@ export async function updateProfilePreferences(
     inttRegistrationNumber?: string;
   }
 ): Promise<AuthActionResult<UserProfile>> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -585,7 +603,7 @@ export async function updateProfilePreferences(
 }
 
 export async function deleteMyAccount(): Promise<AuthActionResult> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -614,7 +632,7 @@ export async function deleteMyAccount(): Promise<AuthActionResult> {
 export async function fetchPublicProfilesForMatching(
   profileIds: string[]
 ): Promise<AuthActionResult<PublicProfileInfoRow[]>> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (!supabase) {
     return {
       ok: false,
@@ -654,7 +672,7 @@ export async function fetchPublicProfilesForMatching(
 }
 
 export async function signOutUser(): Promise<void> {
-  const supabase = getSupabaseClient();
+  const supabase = resolveAuthClient();
   if (supabase) {
     await supabase.auth.signOut();
   }

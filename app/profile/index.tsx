@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import { useAuthStore } from '../../store/useAuthStore';
+import { isMockAuthActive } from '../../services/auth/authService';
 import { getIntegrationReadiness } from '../../services/supabase/client';
 import { getNotificationCapabilityState } from '../../services/notifications/notificationsService';
 
@@ -10,6 +11,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { profile, dataSaverEnabled, setDataSaverEnabled } = useAuthStore();
   const readiness = getIntegrationReadiness();
+  const mockAuthActive = isMockAuthActive();
   const notifications = getNotificationCapabilityState();
 
   return (
@@ -18,8 +20,14 @@ export default function ProfileScreen() {
 
       {!readiness.supabaseConfigured && (
         <View style={styles.card}>
-          <Text style={styles.badge}>{ptAO.common.pendingSetupBadge}</Text>
-          <Text style={styles.body}>{ptAO.setupStatus.supabaseMissing}</Text>
+          <Text style={styles.badge}>
+            {mockAuthActive ? 'Modo mock ativo' : ptAO.common.pendingSetupBadge}
+          </Text>
+          <Text style={styles.body}>
+            {mockAuthActive
+              ? ptAO.setupStatus.mockAuthActiveNotice
+              : ptAO.setupStatus.supabaseMissing}
+          </Text>
         </View>
       )}
 
