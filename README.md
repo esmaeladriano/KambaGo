@@ -98,7 +98,7 @@ psql "$DATABASE_URL" -f supabase/tests/005_email_verification.sql
 
 ## Configuração manual do Supabase
 
-1. Criar o projeto.
+1. Criar   o projeto.
 2. Ativar **Email Auth** em Authentication → Providers → Email.
 3. Ativar **Confirm email**.
 4. Configurar o template de e-mail com `{{ .Token }}` para o código de 6 dígitos.
