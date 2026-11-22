@@ -39,17 +39,17 @@ function readEnvValue(keys: string[]): string {
 }
 
 export function readAppConfig(): AppRuntimeConfig {
-  const supabaseUrl = readEnvValue(['EXPO_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL']);
-  const supabaseAnonKey = readEnvValue(['EXPO_PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY']);
-  const rawMapsProvider = readEnvValue(['EXPO_PUBLIC_MAPS_PROVIDER', 'VITE_MAPS_PROVIDER']);
+  const supabaseUrl = readEnvValue(['EXPO_PUBLIC_SUPABASE_URL']);
+  const supabaseAnonKey = readEnvValue(['EXPO_PUBLIC_SUPABASE_ANON_KEY']);
+  const rawMapsProvider = readEnvValue(['EXPO_PUBLIC_MAPS_PROVIDER']);
   const mapsProvider: MapsProviderName = rawMapsProvider === 'mapbox' ? 'mapbox' : 'google';
 
   const mapsKey =
     mapsProvider === 'mapbox'
-      ? readEnvValue(['EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN', 'VITE_MAPBOX_PUBLIC_TOKEN'])
-      : readEnvValue(['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY', 'VITE_GOOGLE_MAPS_API_KEY']);
+      ? readEnvValue(['EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN'])
+      : readEnvValue(['EXPO_PUBLIC_GOOGLE_MAPS_API_KEY']);
 
-  const expoProjectId = readEnvValue(['EXPO_PUBLIC_EXPO_PROJECT_ID', 'VITE_EXPO_PROJECT_ID']);
+  const expoProjectId = readEnvValue(['EXPO_PUBLIC_EXPO_PROJECT_ID']);
 
   const rawEnv = readEnvValue(['EXPO_PUBLIC_APP_ENV', 'NODE_ENV']);
   const appEnv =
