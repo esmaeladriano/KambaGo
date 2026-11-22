@@ -25,9 +25,10 @@ test('normalizes Angolan mobile numbers to +244 format', () => {
   assert.equal(isValidAngolanPhone('12345'), false);
 });
 
-test('registerSchema requires email, legal consent, and matching password without requiring phone', () => {
+test('registerSchema requires phone, email, legal consent, and matching password', () => {
   const emailOnlyValid = registerSchema.safeParse({
     fullName: 'Manuel Domingos',
+    phone: '923 456 789',
     email: '  Manuel@KambaGo.ao ',
     password: 'segredo123',
     confirmPassword: 'segredo123',
@@ -41,6 +42,7 @@ test('registerSchema requires email, legal consent, and matching password withou
 
   const missingEmail = registerSchema.safeParse({
     fullName: 'Manuel Domingos',
+    phone: '923 456 789',
     email: '',
     password: 'segredo123',
     confirmPassword: 'segredo123',
@@ -51,6 +53,7 @@ test('registerSchema requires email, legal consent, and matching password withou
 
   const missingConsent = registerSchema.safeParse({
     fullName: 'Manuel Domingos',
+    phone: '923 456 789',
     email: 'manuel@kambago.ao',
     password: 'segredo123',
     confirmPassword: 'segredo123',
@@ -61,6 +64,7 @@ test('registerSchema requires email, legal consent, and matching password withou
 
   const mismatch = registerSchema.safeParse({
     fullName: 'Manuel Domingos',
+    phone: '923 456 789',
     email: 'manuel@kambago.ao',
     password: 'segredo123',
     confirmPassword: 'outra',

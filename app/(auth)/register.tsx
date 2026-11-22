@@ -30,6 +30,7 @@ export default function RegisterScreen() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: '',
+      phone: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -97,6 +98,21 @@ export default function RegisterScreen() {
         )}
       />
       {errors.fullName && <RNText style={styles.error}>{errors.fullName.message}</RNText>}
+
+      <Controller
+        control={control}
+        name="phone"
+        render={({ field: { onChange, value } }) => (
+          <RNTextInput
+            style={styles.input}
+            placeholder="+244 923 456 789"
+            value={value}
+            onChangeText={onChange}
+            keyboardType="phone-pad"
+          />
+        )}
+      />
+      {errors.phone && <RNText style={styles.error}>{errors.phone.message}</RNText>}
 
       <Controller
         control={control}

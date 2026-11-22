@@ -105,6 +105,7 @@ export function getMockSupabaseAuthClient() {
         options?: {
           data?: {
             full_name?: string;
+            phone?: string;
             role?: 'passenger' | 'driver';
             consent_terms_at?: string;
             consent_privacy_at?: string;
@@ -131,7 +132,7 @@ export function getMockSupabaseAuthClient() {
         const profile: DbProfileRow = {
           id,
           full_name: params.options?.data?.full_name?.trim() || 'Utilizador KambaGo',
-          phone: null,
+          phone: params.options?.data?.phone?.trim() || null,
           email,
           role,
           account_status: 'pendente',

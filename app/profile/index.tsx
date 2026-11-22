@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { isMockAuthActive } from '../../services/auth/authService';
 import { getIntegrationReadiness } from '../../services/supabase/client';
 import { getNotificationCapabilityState } from '../../services/notifications/notificationsService';
+import { signOutUser } from '../../services/auth/authService';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -56,6 +57,17 @@ export default function ProfileScreen() {
       <Pressable style={styles.linkButton} onPress={() => router.push('/profile/privacy-legal')}>
         <Text style={styles.linkText}>{ptAO.profile.legalLink}</Text>
       </Pressable>
+
+      <Pressable
+        style={styles.logoutButton}
+        onPress={async () => {
+          await signOutUser();
+          useAuthStore.getState().setProfile(null);
+          router.replace('/(auth)/welcome');
+        }}
+      >
+        <Text style={styles.logoutText}>Terminar sessão</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -70,4 +82,16 @@ const styles = StyleSheet.create({
   body: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary, lineHeight: 20 },
   linkButton: { paddingVertical: 14 },
   linkText: { color: KAMBAGO_COLORS.tealDark, fontWeight: '600', fontSize: 15 },
+  logoutButton: {
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: KAMBAGO_COLORS.danger,
+  },
+  logoutText: {
+    color: KAMBAGO_COLORS.danger,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 });

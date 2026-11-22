@@ -47,6 +47,7 @@ export const registerSchema = z
       .trim()
       .min(3, ptAO.validation.fullNameMin)
       .max(100),
+    phone: angolanPhoneSchema,
     email: emailSchema,
     password: z.string().min(8, ptAO.validation.passwordMin),
     confirmPassword: z.string().min(1, ptAO.validation.required),

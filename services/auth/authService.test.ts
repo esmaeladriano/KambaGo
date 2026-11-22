@@ -195,6 +195,7 @@ test('auth operations strictly return pending_configuration in production withou
 
     const reg = await registerUser({
       fullName: 'Joana Mateus',
+      phone: '+244923111222',
       email: 'joana@kambago.ao',
       password: 'password123',
       role: 'passenger',
@@ -251,6 +252,7 @@ test('mock auth fallback allows full UI auth and profile flow in development whe
 
   const reg = await registerUser({
     fullName: 'Joana Mateus',
+    phone: '+244923111222',
     email: 'Joana@KambaGo.ao',
     password: 'password123',
     role: 'passenger',
@@ -304,6 +306,7 @@ test('mock auth fallback allows full UI auth and profile flow in development whe
   // Motorista permanece pendente após confirmar e-mail
   const driverReg = await registerUser({
     fullName: 'Carlos Motorista',
+    phone: '+244923222333',
     email: 'carlos@kambago.ao',
     password: 'password123',
     role: 'driver',
@@ -333,6 +336,7 @@ test('registerUserWithClient normalizes email/phone and detects already-register
   const okClient = makeMockSupabaseClient({ capturedCalls });
   const okRes = await registerUserWithClient(okClient, {
     fullName: 'Joana Mateus',
+    phone: '+244923111222',
     email: '  Joana@KambaGo.ao ',
     password: 'password123',
     role: 'passenger',
@@ -343,10 +347,11 @@ test('registerUserWithClient normalizes email/phone and detects already-register
   assert.equal(okRes.message, ptAO.auth.feedback.registerSuccess);
   const signUpArgs = (capturedCalls as { signUpArgs?: { email: string; options: { data: Record<string, unknown> } } }).signUpArgs;
   assert.equal(signUpArgs?.email, 'joana@kambago.ao');
-  assert.equal('phone' in (signUpArgs?.options.data ?? {}), false);
+  assert.equal(signUpArgs?.options.data.phone, '+244923111222');
 
   const emailOnlyRes = await registerUserWithClient(okClient, {
     fullName: 'Joana Mateus',
+    phone: '+244923333444',
     email: 'Joana.Email@KambaGo.ao',
     password: 'password123',
     role: 'passenger',
@@ -355,11 +360,12 @@ test('registerUserWithClient normalizes email/phone and detects already-register
   assert.equal(emailOnlyRes.ok, true);
   const emailOnlySignUpArgs = (capturedCalls as { signUpArgs?: { email: string; options: { data: Record<string, unknown> } } }).signUpArgs;
   assert.equal(emailOnlySignUpArgs?.email, 'joana.email@kambago.ao');
-  assert.equal('phone' in (emailOnlySignUpArgs?.options.data ?? {}), false);
+  assert.equal(emailOnlySignUpArgs?.options.data.phone, '+244923333444');
 
   const duplicateClient = makeMockSupabaseClient({ signUpIdentities: [] });
   const dupRes = await registerUserWithClient(duplicateClient, {
     fullName: 'Joana Mateus',
+    phone: '+244923111222',
     email: 'joana@kambago.ao',
     password: 'password123',
     role: 'passenger',

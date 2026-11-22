@@ -10,6 +10,7 @@ import type {
 import type { DbProfileRow, PublicProfileInfoRow } from '../../types/database';
 import { getSupabaseClient } from '../supabase/client';
 import { getMockSupabaseAuthClient } from './mockAuthService';
+import { normalizeAngolanPhone } from '../../utils/validation';
 
 const AVATAR_BUCKET = 'profile-avatars';
 const SIGNED_URL_TTL_SECONDS = 300;
@@ -76,6 +77,14 @@ export async function registerUserWithClient(
   payload: RegisterPayload
 ): Promise<AuthActionResult<{ userId: string }>> {
   const normalizedEmail = payload.email.trim().toLowerCase();
+  const normalizedPhone = normalizeAngolanPhone(payload.phone);
+  if (!/^\+2449\d{8}$/.test(normalizedPhone)) {
+    return {
+      ok: false,
+      status: 'validation_error',
+      message: ptAO.validation.phoneInvalid,
+    };
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
     return {
       ok: false,
@@ -92,6 +101,7 @@ export async function registerUserWithClient(
     options: {
       data: {
         full_name: payload.fullName.trim(),
+      phone: normalizedPhone,
         role: payload.role,
         consent_terms_at: nowIso,
         consent_privacy_at: nowIso,
