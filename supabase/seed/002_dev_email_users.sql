@@ -3,7 +3,7 @@ do $$
 begin
   if coalesce(current_setting('app.env', true), '') <> 'development' then
     raise exception 'Seed de desenvolvimento bloqueado: app.env deve ser development';
-  end;
+  end if;
 end $$;
 
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
