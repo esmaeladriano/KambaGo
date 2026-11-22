@@ -96,7 +96,7 @@ psql "$DATABASE_URL" -f supabase/tests/004_fare_rules_rls.sql
 psql "$DATABASE_URL" -f supabase/tests/005_email_verification.sql
 ```
 
-## Configuração manual do Supabase
+## Configuração    manual do Supabase
 
 1. Criar   o projeto.
 2. Ativar **Email Auth** em Authentication → Providers → Email.
