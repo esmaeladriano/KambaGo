@@ -54,6 +54,7 @@ function makeMockSupabaseClient(options: {
   confirmRow?: DbProfileRow | null;
   confirmError?: string;
   myProfileRow?: DbProfileRow | null;
+  noSession?: boolean;
   capturedCalls?: {
     signUpArgs?: unknown;
     signInArgs?: unknown;
@@ -127,10 +128,12 @@ function makeMockSupabaseClient(options: {
           error: options.verifyOtpError ? { message: options.verifyOtpError } : null,
         };
       },
-      getUser: async () => ({
-        data: { user: { id: 'user-1' } },
-        error: null,
-      }),
+      getUser: async () => options.noSession
+        ? { data: { user: null }, error: null }
+        : {
+            data: { user: { id: 'user-1' } },
+            error: null,
+          },
     },
     rpc: (fnName: string) => {
       options.capturedCalls?.rpcNames.push(fnName);
@@ -222,6 +225,13 @@ test('auth operations honestly return pending_configuration without env keys', a
   const del = await deleteMyAccount();
   assert.equal(del.ok, false);
   assert.equal(del.status, 'pending_configuration');
+});
+
+test('fetchMyProfileWithClient returns unauthenticated when there is no active session', async () => {
+  const profile = await fetchMyProfileWithClient(makeMockSupabaseClient({ noSession: true }));
+  assert.equal(profile.ok, false);
+  assert.equal(profile.status, 'error');
+  assert.equal(profile.message, ptAO.auth.feedback.unauthenticatedBody);
 });
 
 test('registerUserWithClient normalizes email/phone and detects already-registered email identities', async () => {
