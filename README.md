@@ -9,7 +9,6 @@ Aplicação móvel de partilha de táxi em Luanda, Angola (corredor inicial conf
 ## Arquitetura do Repositório
 
 - **Raiz (`/`)**: Aplicação móvel principal em **React Native + Expo + Expo Router** (`app/`, `constants/`, `locales/`, `services/`, `store/`, `types/`, `utils/`, `supabase/`).
-- **`web-preview/`**: Pré-visualização web interativa em Vite + React (`web-preview/package.json`) para inspeção rápida no navegador (não faz parte do build nativo Android).
 
 ---
 
@@ -44,8 +43,8 @@ Copia `.env.example` para `.env` e preenche apenas as chaves públicas no client
 cp .env.example .env
 ```
 
-- `EXPO_PUBLIC_SUPABASE_URL` / `VITE_SUPABASE_URL`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 - `EXPO_PUBLIC_EXPO_PROJECT_ID` (opcional, para ativar registo de Expo Push Notifications)
 - `EXPO_PUBLIC_MAPS_PROVIDER` (`google` ou `mapbox`)
 - `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` ou `EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN`
@@ -59,20 +58,14 @@ Segredos de servidor (apenas em ambiente administrativo seguro, nunca no cliente
 
 ### Aplicação Expo (Raiz `/`)
 ```bash
-npm install
+npm ci
 npm run lint          # Verificação TypeScript (inclui app/ e módulos partilhados)
 npm test              # Testes unitários TypeScript (node:test via tsx)
-npm run start         # Expo dev server
+npx expo start        # Metro/Expo Go
 npm run build         # Exportação Android (expo export --platform android)
 ```
 
-### Pré-visualização Web (`web-preview/`)
-```bash
-npm --prefix web-preview install
-npm --prefix web-preview run dev     # Arranque na porta 3000
-npm --prefix web-preview run lint    # Verificação TypeScript da pré-visualização web
-npm --prefix web-preview run build   # Build Vite da pré-visualização web
-```
+Use o Expo Go no dispositivo Android para testar a aplicação principal. A pré-visualização web não faz parte deste projeto.
 
 ### Estimativa de Custos de Mapas por Viagem (Referência)
 - **Autocompletar**: debounce de `500 ms` e mínimo de `3` caracteres (`TECHNICAL_CONFIG`).
