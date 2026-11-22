@@ -1,8 +1,6 @@
 node_modules/
-web-preview/node_modules/
 build/
 dist/
-web-preview/dist/
 .expo/
 .playwright-cli/
 coverage/

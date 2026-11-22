@@ -4,7 +4,6 @@
   "version": "0.1.0",
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "(test -d web-preview/node_modules || npm --prefix web-preview install) && npm --prefix web-preview run dev",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
@@ -44,8 +43,5 @@
     "sharp": "^0.35.5",
     "tsx": "^4.21.0",
     "typescript": "~6.0.3"
-  },
-  "overrides": {
-    "react-dom": "19.3.0"
   }
 }
