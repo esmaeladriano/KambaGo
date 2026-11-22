@@ -12,6 +12,7 @@ import {
   verifyEmailCode,
   verifyEmailCodeWithClient,
   fetchMyProfile,
+  fetchMyProfileWithClient,
   fetchPublicProfilesForMatching,
   deleteMyAccount,
   mapDbProfileToUserProfile,
