@@ -1,89 +1,132 @@
 # KambaGo
 
-**Vamos juntos.** — *Mais pessoas. Menos custos. Uma só rota.*
+**Vamos juntos.** - Mais pessoas. Menos custos. Uma só rota.
 
-Aplicação móvel de partilha de táxi em Luanda, Angola (corredor inicial configurável na base de dados: **Zango → Mutamba**), concebida com prioridade para dispositivos Android modestos, ligações móveis fracas e regras de negócio no servidor.
+Aplicação móvel Expo de partilha de táxi em Luanda, desenvolvida com React Native, Expo Router e Supabase.
 
----
+## Estado das funcionalidades
 
-## Arquitetura do Repositório
+| Funcionalidade | Estado |
+|---|---|
+| Estrutura Expo/Expo Router e verificação TypeScript | Funciona |
+| Registo por e-mail, login e recuperação por e-mail | Funciona com Supabase configurado |
+| Verificação de e-mail por código | Funciona com Email Auth, templates e SMTP configurados |
+| Perfil e estado ativo/pendente | Funciona com migrations e configuração Supabase |
+| Notificações Push | Pendente de configuração EAS/Expo |
+| Mapas | Pendente de implementação na etapa seguinte |
+| Pesquisa, correspondência e viagens partilhadas | Por fazer |
+| Pagamentos e chat em tempo real | Por fazer |
+| Aprovação administrativa de motoristas | Parte da Etapa 1 pronta; painel por fazer |
 
-- **Raiz (`/`)**: Aplicação móvel principal em **React Native + Expo + Expo Router** (`app/`, `constants/`, `locales/`, `services/`, `store/`, `types/`, `utils/`, `supabase/`).
-- **`web-preview/`**: Pré-visualização web interativa em Vite + React (`web-preview/package.json`) para inspeção rápida no navegador (não faz parte do build nativo Android).
+Os testes de aplicação não testam a interface; cobrem validação, autenticação, perfil e estados de conta.
 
----
+## Instalação e verificação
 
-## Matriz de Estado da Etapa 1 (Autenticação, Perfis e Fundação)
+```bash
+npm ci
+npm run lint
+npm test
+npx expo export --platform android --output-dir dist/export-check
+npx expo config --type public
+npx expo-doctor
+```
 
-### O que funciona de facto
-- Estrutura Expo + Expo Router na raiz com verificação TypeScript estrita (`npm run lint`) sobre `app/` e módulos partilhados.
-- Traduções centralizadas em português adaptado a Angola (`locales/pt-AO.ts`).
-- Validação Zod (`utils/validation.ts`) para telefone `+244 9XX XXX XXX`, registo, login, OTP de 6 dígitos, recuperação por e-mail, atualização de perfil e eliminação de conta.
-- Máquina de estados de conta (`pendente`, `ativa`, `suspensa`) em `utils/accountState.ts`.
-- Fluxo de verificação por código enviado por e-mail (Supabase Auth: `signUp` + `auth.resend` + `auth.verifyOtp`), seguido da RPC `confirm_email_verification()` (`005_email_verification_rpc.sql`), que ativa apenas passageiros após confirmação no servidor. Motoristas mantêm-se em `pendente` até aprovação administrativa. A RPC de telefone foi removida em `006_remove_unused_phone_rpc.sql`.
-- Migrations SQL consolidadas (`001` a `004`) com RLS rigorosa em `profiles`, `audit_logs`, `routes` e `fare_rules`, armazenamento de fotos em bucket privado `profile-avatars` (`avatar_path` + URL assinada), e exclusão de conta (`request_account_deletion()`).
-- Persistência local segura no dispositivo: `expo-secure-store` para tokens de sessão do Supabase Auth (`services/supabase/deviceStorage.native.ts`) e `@react-native-async-storage/async-storage` para a preferência não sensível `dataSaverEnabled`.
+Se `npm ci` falhar por lockfile desactualizado, execute `npm install --package-lock-only` e depois `npm ci`.
 
-### Pendente de configuração externa
-- **Supabase (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`)**: enquanto não configurados em `.env`, as ações de servidor devolvem estado `pending_configuration` e a UI mostra **"Configuração pendente"**.
-- **Notificações Push (`EXPO_PUBLIC_EXPO_PROJECT_ID`)**: permanecem desativadas enquanto sem ID de projeto EAS/Expo configurado.
-- **Mapas (`EXPO_PUBLIC_MAPS_PROVIDER`, `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` / `EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN`)**: camada de abstração pronta (`services/maps/mapsProvider.ts`), implementação concreta pendente da Etapa 3.
-- **Registo regulatório INTT e textos legais**: marcados como `"Pendente de confirmação"` / `"Rascunho a validar por advogado"`.
-- **Email Auth no Supabase**: ativar em *Authentication → Providers → Email* e configurar variáveis de ambiente correspondentes.
+## Variáveis de ambiente
 
-### Por fazer (etapas seguintes)
-- **Etapa 2 em diante**: pesquisa/correspondência de viagens, cálculo de preço partilhado, pagamentos, chat/notificações em tempo real e aprovação administrativa de motoristas no painel.
-
----
-
-## Variáveis de Ambiente
-
-Copia `.env.example` para `.env` e preenche apenas as chaves públicas no cliente:
+Copie `.env.example` para `.env` e preencha apenas valores públicos:
 
 ```bash
 cp .env.example .env
 ```
 
-- `EXPO_PUBLIC_SUPABASE_URL` / `VITE_SUPABASE_URL`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY` / `VITE_SUPABASE_ANON_KEY`
-- `EXPO_PUBLIC_EXPO_PROJECT_ID` (opcional, para ativar registo de Expo Push Notifications)
-- `EXPO_PUBLIC_MAPS_PROVIDER` (`google` ou `mapbox`)
-- `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` ou `EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN`
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_MAPS_PROVIDER`
+- `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`
+- `EXPO_PUBLIC_MAPBOX_PUBLIC_TOKEN`
+- `EXPO_PUBLIC_EXPO_PROJECT_ID`
+- `EXPO_PUBLIC_APP_ENV`
 
-Segredos de servidor (apenas em ambiente administrativo seguro, nunca no cliente):
-- `SUPABASE_SERVICE_ROLE_KEY`
+Nunca coloque `SUPABASE_SERVICE_ROLE_KEY`, tokens privados ou outras credenciais no cliente, no repositório ou em `.env.example` com valor preenchido.
 
----
+## Supabase local
 
-## Comandos
+Aplica as migrations nesta ordem:
 
-### Aplicação Expo (Raiz `/`)
-```bash
-npm install
-npm run lint          # Verificação TypeScript (inclui app/ e módulos partilhados)
-npm test              # Testes unitários TypeScript (node:test via tsx)
-npm run start         # Expo dev server
-npm run build         # Exportação Android (expo export --platform android)
+```text
+001_stage1_auth_profiles.sql
+002_stage1_profile_rls_matching.sql
+003_stage1_routing_storage.sql
+004_stage1_account_deletion.sql
+005_email_verification_rpc.sql
+006_remove_unused_phone_rpc.sql
 ```
 
-### Pré-visualização Web (`web-preview/`)
+Depois, para desenvolvimento local:
+
 ```bash
-npm --prefix web-preview install
-npm --prefix web-preview run dev     # Arranque na porta 3000
-npm --prefix web-preview run lint    # Verificação TypeScript da pré-visualização web
-npm --prefix web-preview run build   # Build Vite da pré-visualização web
+npx supabase start
+npx supabase db reset
+npx supabase db seed --file supabase/seed/001_dev_corridors.sql
+npx supabase db seed --file supabase/seed/002_dev_email_users.sql
 ```
 
-### Estimativa de Custos de Mapas por Viagem (Referência)
-- **Autocompletar**: debounce de `500 ms` e mínimo de `3` caracteres (`TECHNICAL_CONFIG`).
-- **Cálculo de rota**: `1` pedido por viagem criada, guardado em cache de rotas para reutilização no mesmo corredor.
-- **Atualização de posição do motorista**: intervalo fixo de `12 s` (`TECHNICAL_CONFIG.driverLocationIntervalMs`).
+O seed `002_dev_email_users.sql` só pode correr com `app.env = development` e contém uma guarda que bloqueia execução em produção.
 
----
+Execute os testes SQL por ordem depois das migrations e dos seeds:
 
-## Passos Manuais para Ligar ao Supabase
+```text
+001_rls_profiles.sql
+002_profiles_rls_matching.sql
+003_phone_rpc_removed.sql
+004_fare_rules_rls.sql
+005_email_verification.sql
+```
 
-1. Criar projeto Supabase (ambiente de desenvolvimento) e ativar **Email Auth** em *Authentication → Providers → Email*.
-2. Aplicar as migrations por ordem (`001_stage1_auth_profiles.sql` até `006_remove_unused_phone_rpc.sql`) e, em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
-3. Promover o primeiro administrador via SQL Editor com `role = 'admin'` e `account_status = 'ativa'`.
-4. Criar `.env` local a partir de `.env.example` (nunca versionar `.env`).
+Exemplo com pgTAP/Supabase local:
+
+```bash
+npx supabase db test
+psql "$DATABASE_URL" -f supabase/tests/001_rls_profiles.sql
+psql "$DATABASE_URL" -f supabase/tests/002_profiles_rls_matching.sql
+psql "$DATABASE_URL" -f supabase/tests/003_phone_rpc_removed.sql
+psql "$DATABASE_URL" -f supabase/tests/004_fare_rules_rls.sql
+psql "$DATABASE_URL" -f supabase/tests/005_email_verification.sql
+```
+
+## Configuração manual do Supabase
+
+1. Criar o projeto.
+2. Ativar **Email Auth** em Authentication → Providers → Email.
+3. Ativar **Confirm email**.
+4. Configurar o template de e-mail com `{{ .Token }}` para o código de 6 dígitos.
+5. Configurar SMTP próprio para ambientes de utilização real.
+6. Promover o primeiro administrador manualmente no SQL Editor.
+
+As políticas RLS devem impedir alterações pelo utilizador a `role`, `account_status`, `email_verified` e `phone_verified`.
+
+## Build Android com EAS
+
+Primeiro iniciar sessão no Expo/EAS:
+
+```bash
+npx eas-cli@latest whoami
+npx eas-cli@latest login
+npx eas-cli@latest init --non-interactive
+```
+
+Criar as variáveis públicas no ambiente `preview`:
+
+```bash
+npx eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value "<URL_PUBLICA>" --visibility plaintext
+npx eas-cli@latest env:create --environment preview --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "<ANON_KEY_PUBLICA>" --visibility sensitive
+```
+
+Gerar o APK:
+
+```bash
+npx eas-cli@latest build --platform android --profile preview --non-interactive
+npx eas-cli@latest build:list --platform android --limit 1
+```

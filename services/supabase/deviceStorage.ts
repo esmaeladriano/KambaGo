@@ -43,7 +43,7 @@ function createWebOrMemoryStorage(): DeviceKeyValueStorage {
   };
 }
 
-// Em ambiente Web (web-preview) e testes Node usa localStorage/memória;
+// Em testes Node usa localStorage/memória;
 // no build nativo Android/iOS o Metro resolve automaticamente deviceStorage.native.ts.
 export const supabaseAuthStorage: DeviceKeyValueStorage = createWebOrMemoryStorage();
 export const preferencesStorage: DeviceKeyValueStorage = createWebOrMemoryStorage();
