@@ -1,22 +1,32 @@
 -- KambaGo - Migration 007: táxi partilhado
 -- Não altera nem substitui as migrations 001 a 006.
 
-create type public.trip_status as enum (
-  'solicitada',
-  'aceite',
-  'a_caminho',
-  'embarque',
-  'em_andamento',
-  'concluida',
-  'cancelada'
-);
+do $$
+begin
+  create type public.trip_status as enum (
+    'solicitada',
+    'aceite',
+    'a_caminho',
+    'embarque',
+    'em_andamento',
+    'concluida',
+    'cancelada'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
-create type public.trip_request_status as enum (
-  'pendente',
-  'aceite',
-  'rejeitada',
-  'cancelada'
-);
+do $$
+begin
+  create type public.trip_request_status as enum (
+    'pendente',
+    'aceite',
+    'rejeitada',
+    'cancelada'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
 create table if not exists public.vehicles (
   id uuid primary key default gen_random_uuid(),
