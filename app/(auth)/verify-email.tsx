@@ -20,6 +20,8 @@ export default function VerifyEmailScreen() {
   const pendingVerificationEmail = useAuthStore((s) => s.pendingVerificationEmail);
   const setProfile = useAuthStore((s) => s.setProfile);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
+  const [verified, setVerified] = useState(false);
   const {
     control,
     handleSubmit,
@@ -35,22 +37,35 @@ export default function VerifyEmailScreen() {
     setFeedback(res.message);
     if (res.ok && res.data) {
       setProfile(res.data);
+      setVerified(true);
       if (res.data.accountStatus === 'ativa') {
-        router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
+        setTimeout(() => {
+          router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
+        }, 900);
       }
     }
   };
 
   const handleResend = async () => {
+    setIsResending(true);
     const res = await sendEmailVerificationCode(getValues('email'));
     setFeedback(res.message);
+    setIsResending(false);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{ptAO.auth.verifyEmailTitle}</Text>
       <Text style={styles.subtitle}>{ptAO.auth.verifyEmailSubtitle}</Text>
-      {feedback && <Text style={styles.feedback}>{feedback}</Text>}
+      {feedback ? (
+        <Text style={[styles.feedback, verified ? styles.feedbackSuccess : null]}>
+          {feedback}
+        </Text>
+      ) : (
+        <Text style={styles.feedback}>
+          Conta criada. Verificamos o teu e-mail antes de ativar a conta.
+        </Text>
+      )}
 
       <Controller
         control={control}
@@ -87,13 +102,21 @@ export default function VerifyEmailScreen() {
 
       <Pressable
         style={styles.button}
-        disabled={isSubmitting}
+        disabled={isSubmitting || verified}
         onPress={() => void handleSubmit(onSubmit)()}
       >
-        <Text style={styles.buttonText}>{ptAO.auth.actions.submitVerifyEmail}</Text>
+        <Text style={styles.buttonText}>
+          {isSubmitting
+            ? 'A verificar...'
+            : verified
+              ? 'E-mail confirmado'
+              : ptAO.auth.actions.submitVerifyEmail}
+        </Text>
       </Pressable>
-      <Pressable onPress={handleResend}>
-        <Text style={styles.link}>{ptAO.auth.actions.resendEmailCode}</Text>
+      <Pressable disabled={isResending || verified} onPress={handleResend}>
+        <Text style={styles.link}>
+          {isResending ? 'A reenviar código...' : ptAO.auth.actions.resendEmailCode}
+        </Text>
       </Pressable>
     </View>
   );
@@ -116,6 +139,10 @@ const styles = StyleSheet.create({
     color: KAMBAGO_COLORS.amberText,
     padding: 12,
     borderRadius: 10,
+  },
+  feedbackSuccess: {
+    backgroundColor: KAMBAGO_COLORS.successSurface,
+    color: KAMBAGO_COLORS.success,
   },
   button: {
     backgroundColor: KAMBAGO_COLORS.teal,
