@@ -6,6 +6,7 @@ import {
   Pressable as RNPressable,
   ScrollView as RNScrollView,
   StyleSheet as RNStyleSheet,
+  Image as RNImage,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +21,8 @@ export default function RegisterScreen() {
   const router = useRouter();
   const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const {
     control,
     handleSubmit,
@@ -52,6 +55,11 @@ export default function RegisterScreen() {
 
   return (
     <RNScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <RNImage
+        source={require('../../assets/images/kambago-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <RNText style={styles.title}>{ptAO.auth.registerTitle}</RNText>
       <RNText style={styles.subtitle}>{ptAO.auth.registerSubtitle}</RNText>
       {feedback && <RNText style={styles.feedback}>{feedback}</RNText>}
@@ -135,13 +143,24 @@ export default function RegisterScreen() {
         control={control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <RNTextInput
-            style={styles.input}
-            placeholder={ptAO.auth.fields.passwordPlaceholder}
-            value={value}
-            onChangeText={onChange}
-            secureTextEntry
-          />
+          <RNView style={styles.passwordRow}>
+            <RNTextInput
+              style={[styles.input, styles.passwordInput]}
+              placeholder={ptAO.auth.fields.passwordPlaceholder}
+              value={value}
+              onChangeText={onChange}
+              secureTextEntry={!showPassword}
+            />
+            <RNPressable
+              accessibilityRole="button"
+              style={styles.passwordToggle}
+              onPress={() => setShowPassword((visible) => !visible)}
+            >
+              <RNText style={styles.passwordToggleText}>
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+              </RNText>
+            </RNPressable>
+          </RNView>
         )}
       />
       {errors.password && <RNText style={styles.error}>{errors.password.message}</RNText>}
@@ -150,13 +169,24 @@ export default function RegisterScreen() {
         control={control}
         name="confirmPassword"
         render={({ field: { onChange, value } }) => (
-          <RNTextInput
-            style={styles.input}
-            placeholder={ptAO.auth.fields.confirmPasswordPlaceholder}
-            value={value}
-            onChangeText={onChange}
-            secureTextEntry
-          />
+          <RNView style={styles.passwordRow}>
+            <RNTextInput
+              style={[styles.input, styles.passwordInput]}
+              placeholder={ptAO.auth.fields.confirmPasswordPlaceholder}
+              value={value}
+              onChangeText={onChange}
+              secureTextEntry={!showConfirmPassword}
+            />
+            <RNPressable
+              accessibilityRole="button"
+              style={styles.passwordToggle}
+              onPress={() => setShowConfirmPassword((visible) => !visible)}
+            >
+              <RNText style={styles.passwordToggleText}>
+                {showConfirmPassword ? 'Ocultar' : 'Mostrar'}
+              </RNText>
+            </RNPressable>
+          </RNView>
         )}
       />
       {errors.confirmPassword && (
@@ -195,9 +225,10 @@ export default function RegisterScreen() {
 }
 
 const styles = RNStyleSheet.create({
-  container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  logo: { width: 100, height: 100, alignSelf: 'center' },
+  title: { fontSize: 26, fontWeight: '800', color: KAMBAGO_COLORS.navy },
   subtitle: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary },
   roleRow: { flexDirection: 'row', gap: 8 },
   roleButton: {
@@ -222,6 +253,10 @@ const styles = RNStyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
+  passwordRow: { position: 'relative' },
+  passwordInput: { paddingRight: 82 },
+  passwordToggle: { position: 'absolute', right: 14, top: 15 },
+  passwordToggleText: { color: KAMBAGO_COLORS.tealDark, fontWeight: '700', fontSize: 13 },
   error: { color: KAMBAGO_COLORS.danger, fontSize: 13 },
   feedback: {
     backgroundColor: KAMBAGO_COLORS.amberSurface,

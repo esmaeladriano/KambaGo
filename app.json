@@ -35,7 +35,7 @@
         {
           "image": "./assets/images/splash.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F7FAFC",
+          "backgroundColor": "#FFFFFF",
           "imageWidth": 240
         }
       ]
