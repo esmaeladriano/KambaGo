@@ -1,15 +1,30 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { KAMBAGO_COLORS } from '../constants/theme';
 import { useAuthStore } from '../store/useAuthStore';
 
 export default function RootLayout() {
   const hydratePreferences = useAuthStore((s) => s.hydratePreferences);
+  const profile = useAuthStore((state) => state.profile);
+  const segments = useSegments();
 
   useEffect(() => {
     void hydratePreferences();
   }, [hydratePreferences]);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    const inPassengerArea = segments[0] === '(passenger)';
+    const inDriverArea = segments[0] === '(driver)';
+
+    if (profile.role === 'driver' && inPassengerArea) {
+      router.replace('/(driver)');
+    } else if (profile.role !== 'driver' && inDriverArea) {
+      router.replace('/(passenger)');
+    }
+  }, [profile, segments]);
 
   return (
     <>

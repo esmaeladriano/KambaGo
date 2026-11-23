@@ -9,6 +9,15 @@ export interface AvailableTrip {
   status: string;
 }
 
+interface DiscoverAvailableTripRow {
+  trip_id: string;
+  origin_name: string;
+  destination_name: string;
+  available_seats: number;
+  estimated_fare_kz: number;
+  status: string;
+}
+
 export async function fetchAvailableTrips(): Promise<{
   ok: boolean;
   trips: AvailableTrip[];
@@ -19,12 +28,7 @@ export async function fetchAvailableTrips(): Promise<{
     return { ok: false, trips: [], message: 'Supabase não configurado.' };
   }
 
-  const { data, error } = await supabase
-    .from('trips')
-    .select('id, origin_name, destination_name, available_seats, total_estimated_kz, status')
-    .eq('status', 'solicitada')
-    .gt('available_seats', 0)
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('discover_available_trips');
 
   if (error) {
     return { ok: false, trips: [], message: error.message };
@@ -32,7 +36,14 @@ export async function fetchAvailableTrips(): Promise<{
 
   return {
     ok: true,
-    trips: (data ?? []) as AvailableTrip[],
+    trips: ((data ?? []) as DiscoverAvailableTripRow[]).map((trip) => ({
+      id: trip.trip_id,
+      origin_name: trip.origin_name,
+      destination_name: trip.destination_name,
+      available_seats: trip.available_seats,
+      total_estimated_kz: trip.estimated_fare_kz,
+      status: trip.status,
+    })),
   };
 }
 
@@ -45,16 +56,10 @@ export async function requestSharedTrip(
     return { ok: false, message: 'Supabase não configurado.' };
   }
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
-    return { ok: false, message: 'Sessão expirada. Inicia sessão novamente.' };
-  }
-
-  const { error } = await supabase.from('trip_requests').insert({
-    trip_id: tripId,
-    passenger_id: userData.user.id,
-    destination_name: destinationName,
-    status: 'pendente',
+  const { error } = await supabase.rpc('request_shared_trip', {
+    p_trip_id: tripId,
+    p_destination_name: destinationName,
+    p_seats_requested: 1,
   });
 
   if (error) {
@@ -62,4 +67,26 @@ export async function requestSharedTrip(
   }
 
   return { ok: true, message: 'Solicitação enviada ao motorista.' };
+}
+
+export async function setDriverAvailability(
+  available: boolean
+): Promise<{ ok: boolean; message: string }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { ok: false, message: 'Supabase não configurado.' };
+  }
+
+  const { error } = await supabase.rpc('set_driver_availability', {
+    p_available: available,
+  });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  return {
+    ok: true,
+    message: available ? 'Disponibilidade ativada.' : 'Disponibilidade desativada.',
+  };
 }

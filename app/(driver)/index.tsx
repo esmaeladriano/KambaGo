@@ -2,14 +2,26 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { useAuthStore } from '../../store/useAuthStore';
+import { setDriverAvailability } from '../../services/trips/tripsService';
 
 export default function DriverDashboardScreen() {
   const profile = useAuthStore((state) => state.profile);
   const [online, setOnline] = useState(false);
+  const [feedback, setFeedback] = useState('');
 
   useEffect(() => {
     setOnline(profile?.accountStatus === 'ativa');
   }, [profile]);
+
+  const updateAvailability = async (available: boolean) => {
+    setFeedback('');
+    const result = await setDriverAvailability(available);
+    if (!result.ok) {
+      setFeedback(result.message);
+      return;
+    }
+    setOnline(available);
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -34,6 +46,8 @@ export default function DriverDashboardScreen() {
         </View>
       )}
 
+      {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+
       <View style={styles.availability}>
         <View>
           <Text style={styles.cardTitle}>Disponibilidade</Text>
@@ -42,7 +56,7 @@ export default function DriverDashboardScreen() {
         <Switch
           value={online}
           disabled={profile?.accountStatus !== 'ativa'}
-          onValueChange={setOnline}
+          onValueChange={(available) => void updateAvailability(available)}
           trackColor={{ true: KAMBAGO_COLORS.teal, false: KAMBAGO_COLORS.border }}
         />
       </View>
@@ -83,6 +97,7 @@ const styles = StyleSheet.create({
   pendingCard: { backgroundColor: KAMBAGO_COLORS.amberSurface, borderRadius: 14, padding: 14, gap: 4 },
   pendingTitle: { color: KAMBAGO_COLORS.amberText, fontWeight: '800' },
   pendingText: { color: KAMBAGO_COLORS.textSecondary, lineHeight: 20 },
+  feedback: { color: KAMBAGO_COLORS.danger, lineHeight: 20 },
   availability: { backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: KAMBAGO_COLORS.border, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { color: KAMBAGO_COLORS.navy, fontWeight: '800', fontSize: 16 },
   cardText: { color: KAMBAGO_COLORS.textSecondary, marginTop: 4 },
