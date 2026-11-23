@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { KAMBAGO_COLORS } from '../constants/theme';
 import { getSupabaseClient } from '../services/supabase/client';
@@ -8,12 +8,12 @@ import { useAuthStore } from '../store/useAuthStore';
 
 export default function IndexScreen() {
   const setProfile = useAuthStore((state) => state.setProfile);
-  const carPosition = useRef(new Animated.Value(-80)).current;
+  const carPosition = useRef(new Animated.Value(-220)).current;
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const animation = Animated.timing(carPosition, {
-      toValue: 260,
+      toValue: 220,
       duration: 900,
       useNativeDriver: true,
     });
@@ -45,15 +45,23 @@ export default function IndexScreen() {
 
   return (
     <View style={styles.container}>
+      <Image
+        source={require('../assets/images/kambago-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <Text style={styles.brand}>KambaGo</Text>
       {!ready && (
         <View style={styles.route}>
           <View style={styles.line} />
-          <Animated.Text
-            style={[styles.car, { transform: [{ translateX: carPosition }] }]}
-          >
-            {'\u25C0'}
-          </Animated.Text>
+          <Animated.Image
+            source={require('../assets/images/kambago-logo.png')}
+            style={[
+              styles.car,
+              { transform: [{ translateX: carPosition }] },
+            ]}
+            resizeMode="contain"
+          />
         </View>
       )}
     </View>
@@ -65,12 +73,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: KAMBAGO_COLORS.navy,
+    backgroundColor: '#FFFFFF',
+  },
+  logo: {
+    width: 150,
+    height: 150,
   },
   brand: {
-    color: '#FFFFFF',
+    color: KAMBAGO_COLORS.navy,
     fontSize: 38,
     fontWeight: '800',
+    marginTop: 8,
   },
   route: {
     width: 260,
@@ -83,10 +96,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: KAMBAGO_COLORS.teal,
+    backgroundColor: KAMBAGO_COLORS.border,
   },
   car: {
-    color: KAMBAGO_COLORS.amber,
-    fontSize: 24,
+    width: 44,
+    height: 44,
   },
 });

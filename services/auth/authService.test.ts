@@ -483,7 +483,7 @@ test('verifyEmailCodeWithClient activates passenger only when verifyOtp and conf
   assert.equal(res.message, ptAO.auth.feedback.emailVerifySuccessPassengerActive);
   assert.deepEqual(
     (capturedCalls as { verifyOtpArgs?: unknown }).verifyOtpArgs,
-    { email: 'joana@kambago.ao', token: '123456', type: 'email' }
+    { email: 'joana@kambago.ao', token: '123456', type: 'signup' }
   );
   assert.deepEqual(capturedCalls.rpcNames, ['confirm_email_verification', 'get_my_profile']);
 });

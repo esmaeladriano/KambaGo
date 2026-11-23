@@ -403,7 +403,7 @@ export async function verifyEmailCodeWithClient(
   const { error: otpError } = await supabase.auth.verifyOtp({
     email: normalizedEmail,
     token: payload.code.trim(),
-    type: 'email',
+    type: 'signup',
   });
 
   if (otpError) {
