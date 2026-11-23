@@ -1,4 +1,6 @@
 -- Testes SQL da migration 008
+begin;
+select plan(1);
 
 do $$
 begin
@@ -71,6 +73,10 @@ begin
     raise exception 'Cliente autenticado ainda tem mutação direta em trip_requests';
   end if;
 end $$;
+
+select pass('Migration 008: verificações de segurança concluídas');
+select * from finish();
+rollback;
 
 select
   'Migration 008: verificações de segurança concluídas' as resultado;

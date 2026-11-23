@@ -39,8 +39,14 @@ function readEnvValue(keys: string[]): string {
 }
 
 export function readAppConfig(): AppRuntimeConfig {
-  const supabaseUrl = readEnvValue(['EXPO_PUBLIC_SUPABASE_URL']);
-  const supabaseAnonKey = readEnvValue(['EXPO_PUBLIC_SUPABASE_ANON_KEY']);
+  const supabaseUrl = readEnvValue([
+    'EXPO_PUBLIC_SUPABASE_URL',
+    'REACT_APP_SUPABASE_URL',
+  ]);
+  const supabaseAnonKey = readEnvValue([
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+    'REACT_APP_SUPABASE_KEY',
+  ]);
   const rawMapsProvider = readEnvValue(['EXPO_PUBLIC_MAPS_PROVIDER']);
   const mapsProvider: MapsProviderName = rawMapsProvider === 'mapbox' ? 'mapbox' : 'google';
 

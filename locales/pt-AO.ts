@@ -26,8 +26,6 @@ export const ptAO = {
     title: 'Estado da configuração do projeto',
     supabaseMissing:
       'Supabase ainda não configurado neste ambiente (faltam EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY). As operações de servidor ficam bloqueadas até configuração.',
-    mockAuthActiveNotice:
-      'Modo de desenvolvimento local ativo (Supabase não configurado): autenticação e perfis simulados em memória para continuares o desenvolvimento da UI.',
     supabaseReady: 'Ligação ao Supabase ativa.',
     mapsMissing:
       'Chave de mapas em configuração pendente (camada de abstração pronta para Google Maps / Mapbox).',
@@ -134,8 +132,6 @@ export const ptAO = {
         'E-mail confirmado, mas a tua conta permanece suspensa. Contacta o suporte.',
       emailConfirmFailed:
         'Código validado, mas não foi possível confirmar a ativação da conta no servidor.',
-      mockVerifyCodeHint:
-        'Modo mock de desenvolvimento: usa o código de teste 123456 para validar este e-mail.',
       unauthenticatedTitle: 'Sessão ainda não iniciada',
       unauthenticatedBody:
         'Quando iniciares sessão num projeto Supabase configurado, os teus dados reais aparecem aqui.',

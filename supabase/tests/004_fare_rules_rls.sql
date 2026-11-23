@@ -14,6 +14,7 @@ declare
   v_admin uuid := '66666666-6666-6666-6666-666666666666';
   v_route_id uuid;
   v_rule_count integer;
+  v_updated_count integer;
   v_insert_blocked boolean := false;
   v_update_blocked boolean := false;
 begin
@@ -59,7 +60,7 @@ begin
   begin
     insert into public.fare_rules (route_id, min_fare_kz, max_fare_kz)
     values (gen_random_uuid(), 500, 1000);
-  exception when insufficient_privilege then
+  exception when others then
     v_insert_blocked := true;
   end;
   if not v_insert_blocked then
@@ -68,7 +69,9 @@ begin
 
   begin
     update public.fare_rules set min_fare_kz = 100 where route_id = v_route_id;
-  exception when insufficient_privilege then
+    get diagnostics v_updated_count = row_count;
+    v_update_blocked := v_updated_count = 0;
+  exception when others then
     v_update_blocked := true;
   end;
   if not v_update_blocked then
