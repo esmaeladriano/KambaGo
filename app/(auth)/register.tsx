@@ -197,12 +197,40 @@ export default function RegisterScreen() {
         control={control}
         name="acceptedLegalTerms"
         render={({ field: { onChange, value } }) => (
-          <RNPressable style={styles.consentRow} onPress={() => onChange(!value)}>
-            <RNText style={styles.consentText}>
-              {value ? '[x] ' : '[ ] '}
-              {ptAO.auth.consent.termsLabel}
-            </RNText>
-          </RNPressable>
+          <RNView style={[styles.consentCard, value && styles.consentCardActive]}>
+            <RNPressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: value }}
+              accessibilityLabel="Aceitar Termos de Utilização e Política de Privacidade"
+              style={[styles.checkbox, value && styles.checkboxActive]}
+              onPress={() => onChange(!value)}
+            >
+              {value ? <RNText style={styles.checkmark}>✓</RNText> : null}
+            </RNPressable>
+            <RNView style={styles.consentCopy}>
+              <RNText style={styles.consentTitle}>Consentimento obrigatório</RNText>
+              <RNText style={styles.consentText}>
+                Li e aceito os{' '}
+                <RNText
+                  style={styles.consentLink}
+                  onPress={() => router.push('/profile/privacy-legal')}
+                >
+                  Termos de Utilização
+                </RNText>
+                {' '}e a{' '}
+                <RNText
+                  style={styles.consentLink}
+                  onPress={() => router.push('/profile/privacy-legal')}
+                >
+                  Política de Privacidade
+                </RNText>
+                .
+              </RNText>
+              <RNText style={styles.consentHint}>
+                Tens de confirmar antes de criar a conta.
+              </RNText>
+            </RNView>
+          </RNView>
         )}
       />
       {errors.acceptedLegalTerms && (
@@ -264,8 +292,40 @@ const styles = RNStyleSheet.create({
     padding: 12,
     borderRadius: 10,
   },
-  consentRow: { paddingVertical: 8 },
-  consentText: { color: KAMBAGO_COLORS.textSecondary, fontSize: 13 },
+  consentCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: KAMBAGO_COLORS.border,
+    backgroundColor: '#F8FAFC',
+  },
+  consentCardActive: {
+    borderColor: KAMBAGO_COLORS.teal,
+    backgroundColor: '#F0FDFA',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: KAMBAGO_COLORS.border,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxActive: {
+    borderColor: KAMBAGO_COLORS.teal,
+    backgroundColor: KAMBAGO_COLORS.teal,
+  },
+  checkmark: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', lineHeight: 18 },
+  consentCopy: { flex: 1, gap: 4 },
+  consentTitle: { color: KAMBAGO_COLORS.navy, fontSize: 14, fontWeight: '800' },
+  consentText: { color: KAMBAGO_COLORS.textSecondary, fontSize: 13, lineHeight: 20 },
+  consentLink: { color: KAMBAGO_COLORS.tealDark, fontWeight: '700', textDecorationLine: 'underline' },
+  consentHint: { color: KAMBAGO_COLORS.textMuted, fontSize: 12, marginTop: 2 },
   button: {
     backgroundColor: KAMBAGO_COLORS.teal,
     paddingVertical: 15,

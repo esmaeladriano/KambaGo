@@ -90,7 +90,7 @@ export const ptAO = {
     },
     consent: {
       termsLabel:
-        'Li e aceito os Termos de Utilização e a Política de Privacidade (rascunho a validar por advogado).',
+        'Li e aceito os Termos de Utilização e a Política de Privacidade.',
       locationNotice:
         'A localização só será pedida quando a aplicação estiver em uso e nunca de forma oculta.',
     },
@@ -235,7 +235,7 @@ export const ptAO = {
     passwordMin: 'A palavra-passe deve ter pelo menos 8 caracteres.',
     passwordsMismatch: 'As palavras-passe não coincidem.',
     emailCodeInvalid: 'O código de confirmação deve ter exatamente 6 dígitos numéricos.',
-    consentRequired: 'Tens de aceitar os Termos e a Política de Privacidade para continuar.',
+    consentRequired: 'Confirma que leste e aceitaste os Termos e a Política de Privacidade.',
     deleteKeywordMismatch: 'Escreve exatamente ELIMINAR para confirmar.',
   },
   navigation: {
