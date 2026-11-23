@@ -71,6 +71,28 @@ Use o Expo Go no dispositivo Android para testar a aplicação principal. A pré
 - **Cálculo de rota**: `1` pedido por viagem criada, guardado em cache de rotas para reutilização no mesmo corredor.
 - **Atualização de posição do motorista**: intervalo fixo de `12 s` (`TECHNICAL_CONFIG.driverLocationIntervalMs`).
 
+### Aplicação móvel
+
+- O projeto é testado no Expo Go para Android. Não existe pré-visualização web oficial.
+- Sem configuração Supabase, todas as operações de autenticação ficam bloqueadas com estado `configuracao_pendente`.
+- Não existe autenticação simulada ou código OTP de teste no cliente.
+
+### Migrations novas
+
+- `009_accounts_and_profiles.sql`: controlo administrativo de contas e bootstrap do primeiro administrador.
+- `010_driver_vehicle_approval.sql`: aprovação e rejeição de motoristas e veículos.
+- `011_trip_lifecycle.sql`: criação e ciclo seguro de viagens.
+- `012_payments_storage.sql`: pagamentos em dinheiro e limites do bucket de avatars.
+
+Não aplicar estas migrations automaticamente nem num Supabase remoto. Aplicar manualmente apenas no ambiente de desenvolvimento autorizado.
+
+### Primeiro administrador
+
+1. Criar ou usar uma conta válida no Supabase Auth.
+2. Confirmar que ainda não existe perfil com `role = 'admin'`.
+3. Executar `select public.bootstrap_first_admin('email@exemplo.ao');` pelo papel de serviço ou durante a migration segura.
+4. `bootstrap_first_admin` não é executável pela API pública ou pelos papéis `anon`/`authenticated`.
+
 ---
 
 ## Passos Manuais para Ligar ao Supabase
