@@ -28,6 +28,8 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)/register" options={{ title: 'Criar conta' }} />
         <Stack.Screen name="(auth)/forgot-password" options={{ title: 'Recuperar palavra-passe' }} />
         <Stack.Screen name="(auth)/verify-email" options={{ title: 'Confirmar e-mail' }} />
+        <Stack.Screen name="(passenger)" options={{ headerShown: false }} />
+        <Stack.Screen name="(driver)" options={{ headerShown: false }} />
         <Stack.Screen name="profile/index" options={{ title: 'O meu perfil' }} />
         <Stack.Screen name="profile/privacy-legal" options={{ title: 'Termos e Privacidade' }} />
       </Stack>

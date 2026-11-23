@@ -28,7 +28,7 @@ export default function IndexScreen() {
           if (profileResult.ok && profileResult.data) {
             setProfile(profileResult.data);
             setReady(true);
-            router.replace('/profile');
+            router.replace(profileResult.data.role === 'driver' ? '/(driver)' : '/(passenger)');
             return;
           }
         }
