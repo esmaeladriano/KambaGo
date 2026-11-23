@@ -18,6 +18,19 @@ function resolveAuthClient(): SupabaseAuthLike | null {
   return getSupabaseClient();
 }
 
+function mapAuthEmailSendError(message: string | undefined): string {
+  const lower = message?.toLowerCase() ?? '';
+  if (
+    lower.includes('unauthorized ip address') ||
+    lower.includes('unexpected_failure') ||
+    lower.includes('error sending confirmation email') ||
+    lower.includes('error sending recovery email')
+  ) {
+    return 'Não foi possível enviar o e-mail neste momento. Verifica a configuração de SMTP no Supabase e tenta novamente.';
+  }
+  return message ?? ptAO.setupStatus.supabaseMissing;
+}
+
 export function mapDbProfileToUserProfile(
   row: DbProfileRow,
   avatarSignedUrl: string | null = null
@@ -100,7 +113,7 @@ export async function registerUserWithClient(
     return {
       ok: false,
       status: 'error',
-      message: error?.message ?? ptAO.setupStatus.supabaseMissing,
+      message: mapAuthEmailSendError(error?.message),
     };
   }
 
@@ -245,7 +258,7 @@ export async function requestPasswordReset(
     return {
       ok: false,
       status: 'error',
-      message: error.message,
+      message: mapAuthEmailSendError(error.message),
     };
   }
 
@@ -298,7 +311,7 @@ export async function sendEmailAuthLinkWithClient(
     return {
       ok: false,
       status: 'error',
-      message: error.message,
+      message: mapAuthEmailSendError(error.message),
     };
   }
 
@@ -336,7 +349,7 @@ export async function sendEmailVerificationCodeWithClient(
     return {
       ok: false,
       status: 'error',
-      message: error.message,
+      message: mapAuthEmailSendError(error.message),
     };
   }
 

@@ -239,6 +239,27 @@ test('auth operations strictly return pending_configuration in production withou
   }
 });
 
+test('registerUserWithClient returns a clear SMTP configuration error', async () => {
+  const client = makeMockSupabaseClient({
+    signUpError: 'Error sending confirmation email: 525 Unauthorized IP address',
+  });
+
+  const result = await registerUserWithClient(client, {
+    fullName: 'Joana Mateus',
+    phone: '+244923111222',
+    email: 'joana@kambago.ao',
+    password: 'password123',
+    role: 'passenger',
+    acceptedLegalTerms: true,
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(
+    result.message,
+    'Não foi possível enviar o e-mail neste momento. Verifica a configuração de SMTP no Supabase e tenta novamente.'
+  );
+});
+
 test('auth operations do not create sessions in development without Supabase env keys', async () => {
   const prevAppEnv = process.env.EXPO_PUBLIC_APP_ENV;
   process.env.EXPO_PUBLIC_APP_ENV = 'development';
