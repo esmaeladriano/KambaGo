@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { fetchAvailableTrips, requestSharedTrip, type AvailableTrip } from '../../services/trips/tripsService';
 import { getIntegrationReadiness } from '../../services/supabase/client';
+import PassengerMap, { type PassengerMapRegion } from '../../components/PassengerMap';
 
-const LUANDA_REGION: Region = {
+const LUANDA_REGION: PassengerMapRegion = {
   latitude: -8.8383,
   longitude: 13.2344,
   latitudeDelta: 0.08,
@@ -17,7 +17,7 @@ const LUANDA_REGION: Region = {
 export default function PassengerHomeScreen() {
   const profile = useAuthStore((state) => state.profile);
   const readiness = getIntegrationReadiness();
-  const [region, setRegion] = useState<Region>(LUANDA_REGION);
+  const [region, setRegion] = useState<PassengerMapRegion>(LUANDA_REGION);
   const [origin, setOrigin] = useState('A minha localização');
   const [destination, setDestination] = useState('');
   const [trips, setTrips] = useState<AvailableTrip[]>([]);
@@ -30,6 +30,7 @@ export default function PassengerHomeScreen() {
 
   useEffect(() => {
     void (async () => {
+      if (Platform.OS === 'web') return;
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status !== 'granted') return;
       const location = await Location.getCurrentPositionAsync({});
@@ -76,9 +77,7 @@ export default function PassengerHomeScreen() {
 
       <View style={styles.map}>
         {readiness.mapsConfigured ? (
-          <MapView style={StyleSheet.absoluteFill} initialRegion={region}>
-            {profile ? <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} /> : null}
-          </MapView>
+          <PassengerMap region={region} showMarker={Boolean(profile)} />
         ) : (
           <View style={styles.mapPending}>
             <Text style={styles.mapPendingText}>Mapas: configuração pendente. Configure uma chave para ativar o mapa.</Text>
