@@ -7,13 +7,13 @@
     "scheme": "kambago",
     "userInterfaceStyle": "light",
     "icon": "./assets/images/icon.png",
-    "backgroundColor": "#F7FAFC",
-    "primaryColor": "#102A43",
+    "backgroundColor": "#FFFFFF",
+    "primaryColor": "#E53935",
     "android": {
       "package": "ao.kambago.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#102A43"
+        "backgroundColor": "#E53935"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -35,7 +35,7 @@
         {
           "image": "./assets/images/splash.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F7FAFC",
+          "backgroundColor": "#FFFFFF",
           "imageWidth": 240
         }
       ]

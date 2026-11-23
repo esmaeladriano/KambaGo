@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Image, ScrollView } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
@@ -13,6 +13,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const setProfile = useAuthStore((s) => s.setProfile);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     control,
     handleSubmit,
@@ -24,7 +25,15 @@ export default function LoginScreen() {
 
   const onSubmit = async (values: LoginFormValues) => {
     const res = await loginUser(values);
-    setFeedback(res.message);
+    if (res.requiresEmailVerification) {
+      setFeedback('Ainda precisas de confirmar o teu e-mail.');
+    } else if (/network|fetch/i.test(res.message)) {
+      setFeedback('Sem ligação à internet. Verifica a tua conexão.');
+    } else if (res.status === 'error') {
+      setFeedback('Não foi possível iniciar sessão. Verifica os teus dados.');
+    } else {
+      setFeedback(res.message);
+    }
     if (res.ok && res.data) {
       setProfile(res.data);
       router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
@@ -32,7 +41,12 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Image
+        source={require('../../assets/images/kambago-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <Text style={styles.title}>{ptAO.auth.loginTitle}</Text>
       <Text style={styles.subtitle}>{ptAO.auth.loginSubtitle}</Text>
       {feedback && <Text style={styles.feedback}>{feedback}</Text>}
@@ -58,13 +72,24 @@ export default function LoginScreen() {
         control={control}
         name="password"
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder={ptAO.auth.fields.passwordPlaceholder}
-            value={value}
-            onChangeText={onChange}
-            secureTextEntry
-          />
+          <View style={styles.passwordRow}>
+            <TextInput
+              style={[styles.input, styles.passwordInput]}
+              placeholder={ptAO.auth.fields.passwordPlaceholder}
+              value={value}
+              onChangeText={onChange}
+              secureTextEntry={!showPassword}
+            />
+            <Pressable
+              accessibilityRole="button"
+              style={styles.passwordToggle}
+              onPress={() => setShowPassword((visible) => !visible)}
+            >
+              <Text style={styles.passwordToggleText}>
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+              </Text>
+            </Pressable>
+          </View>
         )}
       />
       {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
@@ -84,14 +109,19 @@ export default function LoginScreen() {
       <Pressable onPress={() => router.push('/(auth)/verify-email')}>
         <Text style={styles.link}>{ptAO.auth.actions.verifyEmailLink}</Text>
       </Pressable>
-    </View>
+      <Pressable onPress={() => router.push('/(auth)/register')}>
+        <Text style={styles.link}>Ainda não tens conta? Criar conta</Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background, padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
-  subtitle: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  content: { padding: 24, gap: 12, alignItems: 'stretch' },
+  logo: { width: 120, height: 120, alignSelf: 'center', marginBottom: 4 },
+  title: { fontSize: 28, fontWeight: '800', color: KAMBAGO_COLORS.navy },
+  subtitle: { fontSize: 15, color: KAMBAGO_COLORS.textSecondary, marginBottom: 8 },
   input: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -99,6 +129,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
+  passwordRow: { position: 'relative' },
+  passwordInput: { paddingRight: 82 },
+  passwordToggle: { position: 'absolute', right: 14, top: 14 },
+  passwordToggleText: { color: KAMBAGO_COLORS.tealDark, fontWeight: '700', fontSize: 13 },
   error: { color: KAMBAGO_COLORS.danger, fontSize: 13 },
   feedback: {
     backgroundColor: KAMBAGO_COLORS.amberSurface,

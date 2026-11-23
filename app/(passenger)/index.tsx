@@ -23,6 +23,10 @@ export default function PassengerHomeScreen() {
   const [trips, setTrips] = useState<AvailableTrip[]>([]);
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
+  const swapLocations = () => {
+    setOrigin(destination || 'A minha localização');
+    setDestination(origin === 'A minha localização' ? '' : origin);
+  };
 
   useEffect(() => {
     void (async () => {
@@ -83,18 +87,31 @@ export default function PassengerHomeScreen() {
       </View>
 
       <ScrollView style={styles.panel} contentContainerStyle={styles.panelContent}>
-        <TextInput
-          style={styles.input}
-          value={origin}
-          onChangeText={setOrigin}
-          placeholder="Local de partida"
-        />
-        <TextInput
-          style={styles.input}
-          value={destination}
-          onChangeText={setDestination}
-          placeholder="Destino"
-        />
+        <View style={styles.locationCard}>
+          <View style={styles.locationDotOrigin} />
+          <TextInput
+            style={styles.locationInput}
+            value={origin}
+            onChangeText={setOrigin}
+            placeholder="De onde vais sair?"
+          />
+          <View style={styles.locationDivider} />
+          <View style={styles.locationDotDestination} />
+          <TextInput
+            style={styles.locationInput}
+            value={destination}
+            onChangeText={setDestination}
+            placeholder="Para onde vais?"
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Trocar origem e destino"
+            style={styles.swapButton}
+            onPress={swapLocations}
+          >
+            <Text style={styles.swapText}>⇅</Text>
+          </Pressable>
+        </View>
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
         <Pressable style={styles.button} disabled={loading} onPress={() => void searchTrips()}>
           <Text style={styles.buttonText}>{loading ? 'A procurar...' : 'Encontrar viagem'}</Text>
@@ -126,7 +143,48 @@ const styles = StyleSheet.create({
   mapPendingText: { color: KAMBAGO_COLORS.amberText, textAlign: 'center', lineHeight: 20, fontWeight: '700' },
   panel: { flex: 1, backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -16 },
   panelContent: { padding: 20, gap: 10 },
-  input: { borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 12, padding: 14, backgroundColor: '#FFFFFF' },
+  locationCard: {
+    borderWidth: 1,
+    borderColor: KAMBAGO_COLORS.border,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  locationInput: { minHeight: 44, paddingLeft: 18, color: KAMBAGO_COLORS.navy },
+  locationDivider: { height: 1, backgroundColor: KAMBAGO_COLORS.border, marginLeft: 18 },
+  locationDotOrigin: {
+    position: 'absolute',
+    left: 14,
+    top: 22,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: KAMBAGO_COLORS.navy,
+  },
+  locationDotDestination: {
+    position: 'absolute',
+    left: 14,
+    top: 67,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: KAMBAGO_COLORS.teal,
+  },
+  swapButton: {
+    position: 'absolute',
+    right: 10,
+    top: 49,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: KAMBAGO_COLORS.border,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swapText: { color: KAMBAGO_COLORS.tealDark, fontWeight: '800' },
   feedback: { color: KAMBAGO_COLORS.textSecondary, lineHeight: 20 },
   button: { backgroundColor: KAMBAGO_COLORS.amber, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   buttonText: { color: KAMBAGO_COLORS.navy, fontWeight: '800', fontSize: 16 },
