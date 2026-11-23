@@ -36,11 +36,16 @@ export default function VerifyEmailScreen() {
     const res = await verifyEmailCode(values);
     setFeedback(res.message);
     if (res.ok && res.data) {
-      setProfile(res.data);
+      const confirmedProfile = res.data;
+      setProfile(confirmedProfile);
       setVerified(true);
-      if (res.data.accountStatus === 'ativa') {
+      if (confirmedProfile.accountStatus === 'ativa') {
         setTimeout(() => {
-          router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
+          router.replace(
+            confirmedProfile.role === 'driver'
+              ? '/(driver)'
+              : '/(passenger)'
+          );
         }, 900);
       }
     }
