@@ -27,7 +27,7 @@ export default function LoginScreen() {
     setFeedback(res.message);
     if (res.ok && res.data) {
       setProfile(res.data);
-      router.replace('/profile');
+      router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
     }
   };
 

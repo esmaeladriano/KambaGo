@@ -36,7 +36,7 @@ export default function VerifyEmailScreen() {
     if (res.ok && res.data) {
       setProfile(res.data);
       if (res.data.accountStatus === 'ativa') {
-        router.replace('/profile');
+        router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
       }
     }
   };
