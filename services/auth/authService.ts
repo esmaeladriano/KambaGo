@@ -9,26 +9,13 @@ import type {
 } from '../../types/auth';
 import type { DbProfileRow, PublicProfileInfoRow } from '../../types/database';
 import { getSupabaseClient } from '../supabase/client';
-import { getMockSupabaseAuthClient } from './mockAuthService';
 import { normalizeAngolanPhone } from '../../utils/validation';
 
 const AVATAR_BUCKET = 'profile-avatars';
 const SIGNED_URL_TTL_SECONDS = 300;
 
-export function isMockAuthActive(): boolean {
-  const config = readAppConfig();
-  return !config.isSupabaseConfigured && config.appEnv !== 'production';
-}
-
 function resolveAuthClient(): SupabaseAuthLike | null {
-  const supabase = getSupabaseClient();
-  if (supabase) {
-    return supabase;
-  }
-  if (isMockAuthActive()) {
-    return getMockSupabaseAuthClient() as unknown as SupabaseAuthLike;
-  }
-  return null;
+  return getSupabaseClient();
 }
 
 export function mapDbProfileToUserProfile(
