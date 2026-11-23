@@ -21,7 +21,7 @@ begin
   values (v_uid, 'account_deletion_requested', 'profiles', v_uid::text, '{}'::jsonb);
 
   delete from auth.users where id = v_uid;
-end if;
+end;
 $$;
 
 revoke all on function public.request_account_deletion() from public, anon;
@@ -75,7 +75,7 @@ begin
   );
 
   return v_profile;
-end if;
+end;
 $$;
 
 revoke all on function public.set_account_status_admin(uuid, text) from public, anon;

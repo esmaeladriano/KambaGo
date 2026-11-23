@@ -1,4 +1,6 @@
 -- Testes SQL da migration 012
+begin;
+select plan(1);
 
 do $$
 begin
@@ -24,4 +26,6 @@ begin
   end if;
 end $$;
 
-select 'Migration 012: verificações estruturais concluídas' as resultado;
+select pass('Migration 012: verificações estruturais concluídas');
+select * from finish();
+rollback;
