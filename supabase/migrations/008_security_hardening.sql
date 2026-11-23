@@ -83,6 +83,7 @@ grant execute on function public.discover_available_trips() to authenticated;
 -- Viagens não podem ser descobertas por consulta direta da tabela pelo cliente.
 drop policy if exists "trips_select_discovery" on public.trips;
 drop policy if exists "trips_select_active" on public.trips;
+drop policy if exists "trips_select_private" on public.trips;
 
 create policy "trips_select_private"
 on public.trips for select
@@ -100,6 +101,7 @@ using (
 
 -- Pedidos: SELECT próprio; nenhuma mutação direta pelo cliente.
 drop policy if exists "trip_requests_own" on public.trip_requests;
+drop policy if exists "trip_requests_select_own" on public.trip_requests;
 create policy "trip_requests_select_own"
 on public.trip_requests for select
 to authenticated
@@ -529,6 +531,8 @@ revoke insert, update, delete on public.trip_passengers from authenticated, anon
 grant select on public.trip_passengers to authenticated;
 
 drop policy if exists "notifications_own" on public.notifications;
+drop policy if exists "notifications_select_own" on public.notifications;
+drop policy if exists "notifications_update_own" on public.notifications;
 create policy "notifications_select_own"
 on public.notifications for select
 to authenticated
