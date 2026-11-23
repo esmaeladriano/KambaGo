@@ -22,6 +22,9 @@ Aplicação móvel de partilha de táxi em Luanda, Angola (corredor inicial conf
 - Fluxo principal de verificação por código enviado por e-mail (`registo → código de 6 dígitos por e-mail → confirm_email_verification() → passageiro ativo`): após `signUp` / `auth.resend` e `auth.verifyOtp({ type: 'email' })`, a RPC `confirm_email_verification()` (`005_email_verification_rpc.sql`) ativa apenas passageiros confirmados no servidor. Motoristas mantêm-se em `pendente` até aprovação administrativa. A RPC histórica de telefone foi removida em `006_remove_unused_phone_rpc.sql`.
 - Migrations SQL consolidadas (`001` a `004`) com RLS rigorosa em `profiles`, `audit_logs`, `routes` e `fare_rules`, armazenamento de fotos em bucket privado `profile-avatars` (`avatar_path` + URL assinada), e exclusão de conta (`request_account_deletion()`).
 - Persistência local segura no dispositivo: `expo-secure-store` para tokens de sessão do Supabase Auth (`services/supabase/deviceStorage.native.ts`) e `@react-native-async-storage/async-storage` para a preferência não sensível `dataSaverEnabled`.
+- Shell inicial de passageiro com mapa, localização, procura de viagens e solicitação via Supabase.
+- Shell inicial de motorista com disponibilidade, viagens, ganhos e bloqueio administrativo enquanto `account_status = 'pendente'`.
+- Migration `007_shared_mobility.sql` prepara veículos, viagens, paragens, pedidos, passageiros, pagamentos, notificações e locais guardados.
 
 ### Pendente de configuração externa
 - **Supabase (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`)**: enquanto não configurados em `.env`, as ações de servidor devolvem estado `pending_configuration` e a UI mostra **"Configuração pendente"**.
@@ -37,11 +40,7 @@ Aplicação móvel de partilha de táxi em Luanda, Angola (corredor inicial conf
 
 ## Variáveis de Ambiente
 
-Copia `.env.example` para `.env` e preenche apenas as chaves públicas no cliente:
-
-```bash
-cp .env.example .env
-```
+Mantém as variáveis públicas no `.env.local` (não versionado):
 
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
@@ -79,6 +78,6 @@ Use o Expo Go no dispositivo Android para testar a aplicação principal. A pré
 1. No painel Supabase, em *Authentication → Providers → Email*, manter **"Confirm email"** ativo.
 2. Em *Authentication → Email Templates*, configurar **"Confirm signup"** e **"Magic link"** com `{{ .Token }}` para o código de 6 dígitos.
 3. Configurar **SMTP próprio** no Supabase, para não depender do limite do e-mail de teste padrão.
-4. Aplicar as migrations `001` a `006` por ordem (`001_stage1_auth_profiles.sql` até `006_remove_unused_phone_rpc.sql`) e, apenas em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
+4. Aplicar as migrations `001` a `007` por ordem (`001_stage1_auth_profiles.sql` até `007_shared_mobility.sql`) e, apenas em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
 5. Criar o primeiro administrador via SQL Editor (`role = 'admin'` e `account_status = 'ativa'`).
 6. Configurar `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` no `.env` local (nunca versionar `.env`) e no **EAS** antes de gerar builds.
