@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import {
@@ -17,20 +17,44 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ email?: string }>();
+  const emailFromRoute =
+    typeof params.email === 'string' ? params.email.trim().toLowerCase() : '';
   const pendingVerificationEmail = useAuthStore((s) => s.pendingVerificationEmail);
+  const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const setProfile = useAuthStore((s) => s.setProfile);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(60);
   const {
     control,
     handleSubmit,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<EmailVerificationFormValues>({
     resolver: zodResolver(emailVerificationSchema),
-    defaultValues: { email: pendingVerificationEmail || '', code: '' },
+    defaultValues: {
+      email: emailFromRoute || pendingVerificationEmail || '',
+      code: '',
+    },
   });
+  const code = watch('code');
+
+  useEffect(() => {
+    if (emailFromRoute) {
+      setPendingVerificationEmail(emailFromRoute);
+    }
+  }, [emailFromRoute, setPendingVerificationEmail]);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setResendSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendSeconds]);
 
   const onSubmit = async (values: EmailVerificationFormValues) => {
     const res = await verifyEmailCode(values);
@@ -52,9 +76,11 @@ export default function VerifyEmailScreen() {
   };
 
   const handleResend = async () => {
+    if (resendSeconds > 0) return;
     setIsResending(true);
     const res = await sendEmailVerificationCode(getValues('email'));
     setFeedback(res.message);
+    if (res.ok) setResendSeconds(60);
     setIsResending(false);
   };
 
@@ -72,22 +98,15 @@ export default function VerifyEmailScreen() {
         </Text>
       )}
 
-      <Controller
-        control={control}
-        name="email"
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder={ptAO.auth.fields.emailPlaceholder}
-            value={value}
-            onChangeText={onChange}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        )}
-      />
-      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
+      <View style={styles.emailCard}>
+        <Text style={styles.emailLabel}>E-mail utilizado no cadastro</Text>
+        <Text style={styles.emailText}>
+          {emailFromRoute || pendingVerificationEmail || 'E-mail não informado'}
+        </Text>
+        <Pressable onPress={() => router.replace('/(auth)/register')}>
+          <Text style={styles.editEmail}>Corrigir e-mail</Text>
+        </Pressable>
+      </View>
 
       <Controller
         control={control}
@@ -97,9 +116,12 @@ export default function VerifyEmailScreen() {
             style={styles.input}
             placeholder={ptAO.auth.fields.emailCodePlaceholder}
             value={value}
-            onChangeText={onChange}
+            onChangeText={(text) => onChange(text.replace(/\D/g, '').slice(0, 6))}
             keyboardType="number-pad"
             maxLength={6}
+            textAlign="center"
+            autoComplete="one-time-code"
+            accessibilityLabel="Código de confirmação de seis dígitos"
           />
         )}
       />
@@ -107,7 +129,11 @@ export default function VerifyEmailScreen() {
 
       <Pressable
         style={styles.button}
-        disabled={isSubmitting || verified}
+        disabled={
+          isSubmitting ||
+          verified ||
+          (code?.replace(/\D/g, '').length ?? 0) !== 6
+        }
         onPress={() => void handleSubmit(onSubmit)()}
       >
         <Text style={styles.buttonText}>
@@ -118,9 +144,16 @@ export default function VerifyEmailScreen() {
               : ptAO.auth.actions.submitVerifyEmail}
         </Text>
       </Pressable>
-      <Pressable disabled={isResending || verified} onPress={handleResend}>
+      <Pressable
+        disabled={isResending || verified || resendSeconds > 0}
+        onPress={handleResend}
+      >
         <Text style={styles.link}>
-          {isResending ? 'A reenviar código...' : ptAO.auth.actions.resendEmailCode}
+          {isResending
+            ? 'A reenviar código...'
+            : resendSeconds > 0
+              ? `Reenviar código em 00:${String(resendSeconds).padStart(2, '0')}`
+              : 'Reenviar código'}
         </Text>
       </Pressable>
     </View>
@@ -148,6 +181,28 @@ const styles = StyleSheet.create({
   feedbackSuccess: {
     backgroundColor: KAMBAGO_COLORS.successSurface,
     color: KAMBAGO_COLORS.success,
+  },
+  emailCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: KAMBAGO_COLORS.border,
+    borderRadius: 12,
+    padding: 12,
+  },
+  emailLabel: {
+    color: KAMBAGO_COLORS.textMuted,
+    fontSize: 12,
+  },
+  emailText: {
+    color: KAMBAGO_COLORS.navy,
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  editEmail: {
+    color: KAMBAGO_COLORS.tealDark,
+    fontWeight: '700',
+    marginTop: 8,
   },
   button: {
     backgroundColor: KAMBAGO_COLORS.teal,

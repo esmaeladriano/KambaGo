@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 export default function LoginScreen() {
   const router = useRouter();
   const setProfile = useAuthStore((s) => s.setProfile);
+  const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const {
@@ -27,6 +28,11 @@ export default function LoginScreen() {
     const res = await loginUser(values);
     if (res.requiresEmailVerification) {
       setFeedback('Ainda precisas de confirmar o teu e-mail.');
+      setPendingVerificationEmail(values.email.trim().toLowerCase());
+      router.push({
+        pathname: '/(auth)/verify-email',
+        params: { email: values.email.trim().toLowerCase() },
+      });
     } else if (/network|fetch/i.test(res.message)) {
       setFeedback('Sem ligação à internet. Verifica a tua conexão.');
     } else if (res.status === 'error') {

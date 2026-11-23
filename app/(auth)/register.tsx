@@ -48,8 +48,12 @@ export default function RegisterScreen() {
     const result = await registerUser(values);
     setFeedback(result.message);
     if (result.ok) {
-      setPendingVerificationEmail(values.email);
-      router.push('/(auth)/verify-email');
+      const email = values.email.trim().toLowerCase();
+      setPendingVerificationEmail(email);
+      router.replace({
+        pathname: '/(auth)/verify-email',
+        params: { email },
+      });
     }
   };
 
