@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { useAuthStore } from '../../store/useAuthStore';
 import { fetchAvailableTrips, requestSharedTrip, type AvailableTrip } from '../../services/trips/tripsService';
+import { getIntegrationReadiness } from '../../services/supabase/client';
 
 const LUANDA_REGION: Region = {
   latitude: -8.8383,
@@ -15,6 +16,7 @@ const LUANDA_REGION: Region = {
 
 export default function PassengerHomeScreen() {
   const profile = useAuthStore((state) => state.profile);
+  const readiness = getIntegrationReadiness();
   const [region, setRegion] = useState<Region>(LUANDA_REGION);
   const [origin, setOrigin] = useState('A minha localização');
   const [destination, setDestination] = useState('');
@@ -69,9 +71,15 @@ export default function PassengerHomeScreen() {
       </View>
 
       <View style={styles.map}>
-        <MapView style={StyleSheet.absoluteFill} initialRegion={region}>
-          <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
-        </MapView>
+        {readiness.mapsConfigured ? (
+          <MapView style={StyleSheet.absoluteFill} initialRegion={region}>
+            {profile ? <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} /> : null}
+          </MapView>
+        ) : (
+          <View style={styles.mapPending}>
+            <Text style={styles.mapPendingText}>Mapas: configuração pendente. Configure uma chave para ativar o mapa.</Text>
+          </View>
+        )}
       </View>
 
       <ScrollView style={styles.panel} contentContainerStyle={styles.panelContent}>
@@ -114,6 +122,8 @@ const styles = StyleSheet.create({
   greeting: { color: KAMBAGO_COLORS.textSecondary, fontSize: 14 },
   question: { color: KAMBAGO_COLORS.navy, fontSize: 24, fontWeight: '800', marginTop: 2 },
   map: { height: '48%' },
+  mapPending: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: KAMBAGO_COLORS.surfaceMuted, padding: 24 },
+  mapPendingText: { color: KAMBAGO_COLORS.amberText, textAlign: 'center', lineHeight: 20, fontWeight: '700' },
   panel: { flex: 1, backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -16 },
   panelContent: { padding: 20, gap: 10 },
   input: { borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 12, padding: 14, backgroundColor: '#FFFFFF' },

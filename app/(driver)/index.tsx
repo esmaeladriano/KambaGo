@@ -63,11 +63,11 @@ export default function DriverDashboardScreen() {
 
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>0</Text>
+          <Text style={styles.summaryValue}>{online ? 'Online' : 'Offline'}</Text>
           <Text style={styles.summaryLabel}>Viagens hoje</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>0 Kz</Text>
+          <Text style={styles.summaryValue}>Visto em Ganhos</Text>
           <Text style={styles.summaryLabel}>Ganhos</Text>
         </View>
       </View>

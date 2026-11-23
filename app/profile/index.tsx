@@ -50,6 +50,12 @@ export default function ProfileScreen() {
         <Text style={styles.linkText}>{ptAO.profile.legalLink}</Text>
       </Pressable>
 
+      {profile?.role === 'admin' && (
+        <Pressable style={styles.linkButton} onPress={() => router.push('/admin')}>
+          <Text style={styles.linkText}>Área administrativa</Text>
+        </Pressable>
+      )}
+
       <Pressable
         style={styles.logoutButton}
         onPress={async () => {
