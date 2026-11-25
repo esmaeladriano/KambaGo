@@ -6,12 +6,14 @@ import { useAuthStore } from '../store/useAuthStore';
 
 export default function RootLayout() {
   const hydratePreferences = useAuthStore((s) => s.hydratePreferences);
+  const hydratePendingVerificationEmail = useAuthStore((s) => s.hydratePendingVerificationEmail);
   const profile = useAuthStore((state) => state.profile);
   const segments = useSegments();
 
   useEffect(() => {
     void hydratePreferences();
-  }, [hydratePreferences]);
+    void hydratePendingVerificationEmail();
+  }, [hydratePreferences, hydratePendingVerificationEmail]);
 
   useEffect(() => {
     if (!profile) return;
@@ -43,6 +45,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)/register" options={{ title: 'Criar conta' }} />
         <Stack.Screen name="(auth)/forgot-password" options={{ title: 'Recuperar palavra-passe' }} />
         <Stack.Screen name="(auth)/verify-email" options={{ title: 'Confirmar e-mail' }} />
+        <Stack.Screen name="(auth)/reset-password" options={{ title: 'Nova palavra-passe' }} />
         <Stack.Screen name="(passenger)" options={{ headerShown: false }} />
         <Stack.Screen name="(driver)" options={{ headerShown: false }} />
         <Stack.Screen name="profile/index" options={{ title: 'O meu perfil' }} />

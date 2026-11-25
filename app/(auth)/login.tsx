@@ -28,6 +28,9 @@ export default function LoginScreen() {
     if (res.ok && res.data) {
       setProfile(res.data);
       router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
+    } else if (res.requiresEmailVerification && res.data) {
+      // Email não confirmado: redireciona para verificação com o e-mail da conta
+      router.push(`/auth/verify-email?email=${encodeURIComponent(res.data.email)}`);
     }
   };
 
@@ -79,10 +82,6 @@ export default function LoginScreen() {
 
       <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
         <Text style={styles.link}>{ptAO.auth.actions.forgotLink}</Text>
-      </Pressable>
-
-      <Pressable onPress={() => router.push('/(auth)/verify-email')}>
-        <Text style={styles.link}>{ptAO.auth.actions.verifyEmailLink}</Text>
       </Pressable>
     </View>
   );

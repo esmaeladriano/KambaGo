@@ -253,7 +253,10 @@ export async function requestPasswordReset(
     };
   }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
+  const redirectTo = 'kambago://reset-password';
+  const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+    redirectTo,
+  });
   if (error) {
     return {
       ok: false,
@@ -266,6 +269,38 @@ export async function requestPasswordReset(
     ok: true,
     status: 'success',
     message: ptAO.auth.feedback.forgotSent,
+  };
+}
+
+export async function updatePassword(
+  token: string,
+  newPassword: string
+): Promise<AuthActionResult> {
+  const supabase = resolveAuthClient();
+  if (!supabase) {
+    return {
+      ok: false,
+      status: 'pending_configuration',
+      message: ptAO.setupStatus.supabaseMissing,
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser(
+    { password: newPassword },
+    { accessToken: token }
+  );
+  if (error) {
+    return {
+      ok: false,
+      status: 'error',
+      message: error.message,
+    };
+  }
+
+  return {
+    ok: true,
+    status: 'success',
+    message: ptAO.auth.feedback.resetSuccess,
   };
 }
 
