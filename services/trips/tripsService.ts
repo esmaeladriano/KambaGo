@@ -7,6 +7,10 @@ export interface AvailableTrip {
   available_seats: number;
   total_estimated_kz: number;
   status: string;
+  driver_id: string;
+  driver_name: string | null;
+  vehicle_plate: string | null;
+  vehicle_brand: string | null;
 }
 
 interface DiscoverAvailableTripRow {
@@ -16,9 +20,20 @@ interface DiscoverAvailableTripRow {
   available_seats: number;
   estimated_fare_kz: number;
   status: string;
+  driver_id: string;
+  driver_name: string | null;
+  vehicle_plate: string | null;
+  vehicle_brand: string | null;
 }
 
-export async function fetchAvailableTrips(): Promise<{
+export interface TripSearchParams {
+  origin?: string;
+  destination?: string;
+}
+
+export async function fetchAvailableTrips(
+  params: TripSearchParams = {}
+): Promise<{
   ok: boolean;
   trips: AvailableTrip[];
   message?: string;
@@ -28,7 +43,10 @@ export async function fetchAvailableTrips(): Promise<{
     return { ok: false, trips: [], message: 'Supabase não configurado.' };
   }
 
-  const { data, error } = await supabase.rpc('discover_available_trips');
+  const { data, error } = await supabase.rpc('discover_available_trips', {
+    p_origin: params.origin ?? null,
+    p_destination: params.destination ?? null,
+  });
 
   if (error) {
     return { ok: false, trips: [], message: error.message };
@@ -43,13 +61,18 @@ export async function fetchAvailableTrips(): Promise<{
       available_seats: trip.available_seats,
       total_estimated_kz: trip.estimated_fare_kz,
       status: trip.status,
+      driver_id: trip.driver_id,
+      driver_name: trip.driver_name,
+      vehicle_plate: trip.vehicle_plate,
+      vehicle_brand: trip.vehicle_brand,
     })),
   };
 }
 
 export async function requestSharedTrip(
   tripId: string,
-  destinationName: string
+  destinationName: string,
+  seatsRequested: number = 1
 ): Promise<{ ok: boolean; message: string }> {
   const supabase = getSupabaseClient();
   if (!supabase) {
@@ -59,7 +82,7 @@ export async function requestSharedTrip(
   const { error } = await supabase.rpc('request_shared_trip', {
     p_trip_id: tripId,
     p_destination_name: destinationName,
-    p_seats_requested: 1,
+    p_seats_requested: seatsRequested,
   });
 
   if (error) {
@@ -159,6 +182,15 @@ export async function rejectTripRequest(requestId: string): Promise<{ ok: boolea
     : { ok: true, message: 'Pedido rejeitado.' };
 }
 
+export async function markPaymentPaid(paymentId: string): Promise<{ ok: boolean; message: string }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, message: 'Supabase não configurado.' };
+  const { error } = await supabase.rpc('mark_payment_paid', { p_payment_id: paymentId });
+  return error
+    ? { ok: false, message: error.message }
+    : { ok: true, message: 'Pagamento confirmado como pago.' };
+}
+
 export async function cancelMyTripRequest(requestId: string): Promise<{ ok: boolean; message: string }> {
   const supabase = getSupabaseClient();
   if (!supabase) return { ok: false, message: 'Supabase não configurado.' };
@@ -171,6 +203,7 @@ export async function cancelMyTripRequest(requestId: string): Promise<{ ok: bool
 export interface PaidEarnings {
   totalKz: number;
   paymentsCount: number;
+  pendingCount: number;
 }
 
 export async function fetchPaidEarnings(): Promise<{
@@ -180,24 +213,22 @@ export async function fetchPaidEarnings(): Promise<{
 }> {
   const supabase = getSupabaseClient();
   if (!supabase) {
-    return { ok: false, earnings: { totalKz: 0, paymentsCount: 0 }, message: 'Supabase não configurado.' };
+    return { ok: false, earnings: { totalKz: 0, paymentsCount: 0, pendingCount: 0 }, message: 'Supabase não configurado.' };
   }
 
-  const { data, error } = await supabase
-    .from('payments')
-    .select('amount_kz,status')
-    .eq('status', 'pago');
+  const { data, error } = await supabase.rpc('fetch_driver_earnings');
 
   if (error) {
-    return { ok: false, earnings: { totalKz: 0, paymentsCount: 0 }, message: error.message };
+    return { ok: false, earnings: { totalKz: 0, paymentsCount: 0, pendingCount: 0 }, message: error.message };
   }
 
-  const payments = (data ?? []) as Array<{ amount_kz: number; status: string }>;
+  const row = (data ?? [])[0] as { total_kz: number; payments_count: number; pending_count: number } | undefined;
   return {
     ok: true,
     earnings: {
-      totalKz: payments.reduce((sum, payment) => sum + payment.amount_kz, 0),
-      paymentsCount: payments.length,
+      totalKz: row?.total_kz ?? 0,
+      paymentsCount: row?.payments_count ?? 0,
+      pendingCount: row?.pending_count ?? 0,
     },
   };
 }
@@ -209,6 +240,8 @@ export interface TripRequestRow {
   status: string;
   seats_requested: number;
   destination_name: string | null;
+  origin_name: string | null;
+  estimated_fare_kz: number | null;
   created_at: string;
 }
 
@@ -221,7 +254,9 @@ export async function fetchMyTripRequests(): Promise<{
   if (!supabase) return { ok: false, requests: [], message: 'Supabase não configurado.' };
   const { data, error } = await supabase
     .from('trip_requests')
-    .select('id,trip_id,passenger_id,status,seats_requested,destination_name,created_at')
+    .select(
+      'id,trip_id,passenger_id,status,seats_requested,destination_name,origin_name,estimated_fare_kz,created_at'
+    )
     .order('created_at', { ascending: false });
   if (error) return { ok: false, requests: [], message: error.message };
   return { ok: true, requests: (data ?? []) as TripRequestRow[] };

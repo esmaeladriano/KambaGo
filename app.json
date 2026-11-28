@@ -39,6 +39,11 @@
           "imageWidth": 240
         }
       ]
-    ]
+    ],
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/icon.png",
+      "bundler": "metro"
+    }
   }
 }

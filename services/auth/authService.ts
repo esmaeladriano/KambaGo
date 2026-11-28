@@ -47,6 +47,7 @@ export function mapDbProfileToUserProfile(
     avatarPath: row.avatar_path,
     avatarSignedUrl,
     dataSaverEnabled: row.data_saver_enabled,
+    isAvailable: row.is_available ?? false,
     inttRegistrationNumber: row.intt_registration_number,
     inttVerificationStatus: row.intt_verification_status,
     consentTermsAt: row.consent_terms_at,

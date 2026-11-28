@@ -16,6 +16,7 @@ export interface UserProfile {
   avatarPath: string | null;
   avatarSignedUrl: string | null;
   dataSaverEnabled: boolean;
+  isAvailable: boolean;
   inttRegistrationNumber: string | null;
   inttVerificationStatus: 'pendente_confirmacao';
   consentTermsAt: string | null;

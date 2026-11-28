@@ -1,11 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import * as Location from 'expo-location';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { useAuthStore } from '../../store/useAuthStore';
-import { fetchAvailableTrips, requestSharedTrip, type AvailableTrip } from '../../services/trips/tripsService';
+import {
+  fetchAvailableTrips,
+  requestSharedTrip,
+  type AvailableTrip,
+  type TripSearchParams,
+} from '../../services/trips/tripsService';
 import { getIntegrationReadiness } from '../../services/supabase/client';
 import PassengerMap, { type PassengerMapRegion } from '../../components/PassengerMap';
+import { formatKz } from '../../utils/accountState';
 
 const LUANDA_REGION: PassengerMapRegion = {
   latitude: -8.8383,
@@ -23,6 +37,7 @@ export default function PassengerHomeScreen() {
   const [trips, setTrips] = useState<AvailableTrip[]>([]);
   const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
+  const [seatsToRequest, setSeatsToRequest] = useState(1);
   const swapLocations = () => {
     setOrigin(destination || 'A minha localização');
     setDestination(origin === 'A minha localização' ? '' : origin);
@@ -44,26 +59,38 @@ export default function PassengerHomeScreen() {
   }, []);
 
   const searchTrips = async () => {
-    if (!destination.trim()) {
-      setFeedback('Indique o destino da viagem.');
-      return;
+    const searchParams: TripSearchParams = {};
+    if (origin.trim() && origin !== 'A minha localização') {
+      searchParams.origin = origin;
     }
+    if (destination.trim()) {
+      searchParams.destination = destination;
+    }
+
     setLoading(true);
-    const result = await fetchAvailableTrips();
+    const result = await fetchAvailableTrips(searchParams);
     setTrips(result.trips);
     setFeedback(
       result.ok
         ? result.trips.length
-          ? `${result.trips.length} viagem(ns) disponível(is).`
-          : 'Nenhuma viagem compatível disponível.'
+          ? `${result.trips.length} viagem(ns) compatível(is) encontrada(s).`
+          : 'Nenhuma viagem compatível com a tua pesquisa.'
         : result.message ?? 'Não foi possível procurar viagens.'
     );
     setLoading(false);
   };
 
   const requestTrip = async (trip: AvailableTrip) => {
-    const result = await requestSharedTrip(trip.id, destination);
+    if (seatsToRequest > trip.available_seats) {
+      setFeedback(`Só existem ${trip.available_seats} lugar(es) disponível(is).`);
+      return;
+    }
+    const result = await requestSharedTrip(trip.id, destination, seatsToRequest);
     setFeedback(result.message);
+    if (result.ok) {
+      setSeatsToRequest(1);
+      void searchTrips();
+    }
   };
 
   return (
@@ -111,22 +138,74 @@ export default function PassengerHomeScreen() {
             <Text style={styles.swapText}>⇅</Text>
           </Pressable>
         </View>
+
+        <View style={styles.seatsRow}>
+          <Text style={styles.seatsLabel}>Lugares:</Text>
+          <Pressable
+            style={styles.seatsButton}
+            onPress={() => setSeatsToRequest((s) => Math.max(1, s - 1))}
+            disabled={seatsToRequest <= 1}
+          >
+            <Text style={styles.seatsButtonText}>−</Text>
+          </Pressable>
+          <Text style={styles.seatsValue}>{seatsToRequest}</Text>
+          <Pressable
+            style={styles.seatsButton}
+            onPress={() => setSeatsToRequest((s) => s + 1)}
+          >
+            <Text style={styles.seatsButtonText}>+</Text>
+          </Pressable>
+        </View>
+
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
-        <Pressable style={styles.button} disabled={loading} onPress={() => void searchTrips()}>
-          <Text style={styles.buttonText}>{loading ? 'A procurar...' : 'Encontrar viagem'}</Text>
+        <Pressable
+          style={styles.button}
+          disabled={loading}
+          onPress={() => void searchTrips()}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? 'A procurar...' : 'Encontrar viagem'}
+          </Text>
         </Pressable>
 
-        {trips.map((trip) => (
-          <View key={trip.id} style={styles.tripCard}>
-            <Text style={styles.tripTitle}>{trip.origin_name} → {trip.destination_name}</Text>
-            <Text style={styles.tripMeta}>
-              {trip.available_seats} lugar(es) · Até {trip.total_estimated_kz} Kz
-            </Text>
-            <Pressable style={styles.requestButton} onPress={() => void requestTrip(trip)}>
-              <Text style={styles.requestText}>Solicitar</Text>
-            </Pressable>
-          </View>
-        ))}
+        {trips.map((trip) => {
+          const pricePerSeat =
+            trip.available_seats > 0
+              ? Math.ceil(trip.total_estimated_kz / trip.available_seats)
+              : 0;
+          return (
+            <View key={trip.id} style={styles.tripCard}>
+              <View style={styles.tripHeader}>
+                <Text style={styles.tripTitle}>
+                  {trip.origin_name} → {trip.destination_name}
+                </Text>
+                <Text style={styles.tripPrice}>{formatKz(pricePerSeat)} / lugar</Text>
+              </View>
+              <Text style={styles.tripMeta}>
+                {trip.available_seats} lugar(es) disponível · Total até{' '}
+                {formatKz(trip.total_estimated_kz)}
+              </Text>
+              {trip.driver_name && (
+                <Text style={styles.tripDriver}>
+                  Motorista: {trip.driver_name} · {trip.vehicle_brand ?? ''}
+                  {trip.vehicle_plate ? ` · ${trip.vehicle_plate}` : ''}
+                </Text>
+              )}
+              <View style={styles.tripActions}>
+                <Text style={styles.seatsHint}>
+                  Máximo disponível: {trip.available_seats}
+                </Text>
+                <Pressable
+                  style={styles.requestButton}
+                  onPress={() => void requestTrip(trip)}
+                  disabled={seatsToRequest > trip.available_seats}
+                >
+                  <Text style={styles.requestText}>Solicitar</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -184,12 +263,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   swapText: { color: KAMBAGO_COLORS.tealDark, fontWeight: '800' },
+  seatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: KAMBAGO_COLORS.border,
+  },
+  seatsLabel: { color: KAMBAGO_COLORS.textSecondary, fontWeight: '700', fontSize: 14 },
+  seatsButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: KAMBAGO_COLORS.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seatsButtonText: { color: KAMBAGO_COLORS.navy, fontWeight: '800', fontSize: 16 },
+  seatsValue: { color: KAMBAGO_COLORS.navy, fontWeight: '800', fontSize: 16, marginHorizontal: 4 },
   feedback: { color: KAMBAGO_COLORS.textSecondary, lineHeight: 20 },
   button: { backgroundColor: KAMBAGO_COLORS.amber, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   buttonText: { color: KAMBAGO_COLORS.navy, fontWeight: '800', fontSize: 16 },
-  tripCard: { borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 14, padding: 14, gap: 8 },
-  tripTitle: { color: KAMBAGO_COLORS.navy, fontWeight: '700' },
-  tripMeta: { color: KAMBAGO_COLORS.textSecondary },
-  requestButton: { alignSelf: 'flex-start', backgroundColor: KAMBAGO_COLORS.tealDark, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
+  tripCard: { borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 14, padding: 14, gap: 8, backgroundColor: '#FFFFFF' },
+  tripHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  tripTitle: { color: KAMBAGO_COLORS.navy, fontWeight: '700', fontSize: 16 },
+  tripPrice: { color: KAMBAGO_COLORS.tealDark, fontWeight: '800', fontSize: 16 },
+  tripMeta: { color: KAMBAGO_COLORS.textSecondary, fontSize: 14 },
+  tripDriver: { color: KAMBAGO_COLORS.textSecondary, fontSize: 13, marginTop: 4 },
+  tripActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
+  seatsHint: { color: KAMBAGO_COLORS.textMuted, fontSize: 12 },
+  requestButton: { backgroundColor: KAMBAGO_COLORS.tealDark, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   requestText: { color: '#FFFFFF', fontWeight: '700' },
 });

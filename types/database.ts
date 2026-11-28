@@ -9,6 +9,7 @@ export interface DbProfileRow {
   email_verified: boolean;
   avatar_path: string | null;
   data_saver_enabled: boolean;
+  is_available: boolean;
   intt_registration_number: string | null;
   intt_verification_status: 'pendente_confirmacao';
   consent_terms_at: string | null;
