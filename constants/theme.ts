@@ -24,10 +24,11 @@ export const KAMBAGO_COLORS = {
 
   // Cor de destaque (mantida para compatibilidade com mapas e marcadores)
   accent: '#E53935',
+};
 
-  // Aliases de compatibilidade com nomes anteriores (não usar em novo código)
-  // Preencher aliases para evitar quebrar código existente
-(Object as Record<string, unknown>).assign(KAMBAGO_COLORS, {
+// Aliases de compatibilidade com nomes anteriores (não usar em novo código)
+// Preencher aliases para evitar quebrar código existente
+Object.assign(KAMBAGO_COLORS, {
   navy: '#191919',
   navyLight: '#333333',
   teal: '#E53935',
