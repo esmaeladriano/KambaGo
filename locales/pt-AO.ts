@@ -70,6 +70,8 @@ export const ptAO = {
     verifyEmailTitle: 'Confirmar e-mail',
     verifyEmailSubtitle:
       'Introduz o código de confirmação de 6 dígitos enviado para o teu e-mail.',
+    verifyEmailSubtitleNoEmail:
+      'Não há nenhum e-mail pendente de verificação. Regista-te para receber o código.',
     fields: {
       fullName: 'Nome completo',
       fullNamePlaceholder: 'Ex.: Manuel Domingos',
@@ -99,12 +101,14 @@ export const ptAO = {
       submitRegister: 'Criar conta',
       submitForgot: 'Enviar recuperação',
       submitVerifyEmail: 'Confirmar código',
+      submitReset: 'Guardar nova palavra-passe',
       resendEmailCode: 'Reenviar código por e-mail',
       sendEmailLink: 'Enviar link de acesso por e-mail',
       forgotLink: 'Esqueci-me da palavra-passe',
       goToRegister: 'Não tens conta? Criar conta',
       goToLogin: 'Já tens conta? Entrar',
       verifyEmailLink: 'Já tenho código de confirmação',
+      fixEmail: 'Corrigir e-mail',
       logout: 'Terminar sessão',
     },
     feedback: {
@@ -123,6 +127,7 @@ export const ptAO = {
       emailCodePendingConfig:
         'O envio e confirmação de código por e-mail aguardam configuração do Supabase neste ambiente.',
       emailCodeResent: 'Novo código de confirmação enviado para o teu e-mail.',
+      resendCooldown: 'Podes reenviar o código em {s} s.',
       emailVerifySuccess: 'E-mail confirmado com sucesso.',
       emailVerifySuccessPassengerActive:
         'E-mail confirmado com sucesso. A tua conta de passageiro está ativa.',
@@ -135,6 +140,13 @@ export const ptAO = {
       unauthenticatedTitle: 'Sessão ainda não iniciada',
       unauthenticatedBody:
         'Quando iniciares sessão num projeto Supabase configurado, os teus dados reais aparecem aqui.',
+      resetInvalidTitle: 'Link inválido ou expirado',
+      resetInvalidLink: 'Este link de recuperação é inválido ou expirou. Pede um novo link.',
+      resetTitle: 'Nova palavra-passe',
+      resetSubtitle: 'Define a tua nova palavra-passe abaixo.',
+      resetSuccessTitle: 'Palavra-passe alterada',
+      resetSuccessSubtitle: 'A tua palavra-passe foi atualizada com sucesso. Podes agora iniciar sessão.',
+      resetSuccess: 'Palavra-passe alterada com sucesso.',
     },
   },
   profile: {

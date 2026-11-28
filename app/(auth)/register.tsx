@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import { registerSchema, type RegisterFormValues } from '../../utils/validation';
@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { email: emailParam } = useLocalSearchParams<{ email?: string }>();
   const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +35,7 @@ export default function RegisterScreen() {
     defaultValues: {
       fullName: '',
       phone: '',
-      email: '',
+      email: emailParam || '',
       password: '',
       confirmPassword: '',
       role: 'passenger',

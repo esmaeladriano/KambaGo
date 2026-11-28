@@ -1,9 +1,6 @@
 import { z } from 'zod';
 import { ptAO } from '../locales/pt-AO';
 
-/**
- * Normaliza números de telefone angolanos para o formato E.164 (+2449XXXXXXXX).
- */
 export function normalizeAngolanPhone(input: string): string {
   const digits = input.replace(/[^\d+]/g, '');
   if (digits.startsWith('+244')) {
@@ -78,6 +75,16 @@ export const emailVerificationSchema = z.object({
     .regex(/^\d{6}$/, ptAO.validation.emailCodeInvalid),
 });
 
+export const resetPasswordSchema = z
+  .object({
+    password: z.string().min(8, ptAO.validation.passwordMin),
+    confirmPassword: z.string().min(1, ptAO.validation.required),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: ptAO.validation.passwordsMismatch,
+  });
+
 export const profileUpdateSchema = z.object({
   fullName: z.string().trim().min(3, ptAO.validation.fullNameMin).max(100),
   email: z
@@ -107,5 +114,6 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type EmailVerificationFormValues = z.infer<typeof emailVerificationSchema>;
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 export type ProfileUpdateFormValues = z.infer<typeof profileUpdateSchema>;
 export type DeleteAccountFormValues = z.infer<typeof deleteAccountSchema>;

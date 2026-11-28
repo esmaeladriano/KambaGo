@@ -43,6 +43,10 @@ export default function LoginScreen() {
     if (res.ok && res.data) {
       setProfile(res.data);
       router.replace(res.data.role === 'driver' ? '/(driver)' : '/(passenger)');
+    } else if (res.requiresEmailVerification && res.data) {
+      // Email não confirmado: redireciona para verificação com o e-mail da conta
+      const emailParam = res.data.email ? `?email=${encodeURIComponent(res.data.email)}` : '';
+      router.push(`/auth/verify-email${emailParam}`);
     }
   };
 

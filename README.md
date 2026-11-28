@@ -99,10 +99,11 @@ Não aplicar estas migrations automaticamente nem num Supabase remoto. Aplicar m
 
 1. No painel Supabase, em *Authentication → Providers → Email*, manter **"Confirm email"** ativo.
 2. Em *Authentication → Email Templates*, configurar **"Confirm signup"** e **"Magic link"** com `{{ .Token }}` para o código de 6 dígitos.
-3. Configurar **SMTP próprio** no Supabase, para não depender do limite do e-mail de teste padrão.
-4. Aplicar as migrations `001` a `007` por ordem (`001_stage1_auth_profiles.sql` até `007_shared_mobility.sql`) e, apenas em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
-5. Criar o primeiro administrador via SQL Editor (`role = 'admin'` e `account_status = 'ativa'`).
-6. Configurar `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` no `.env` local (nunca versionar `.env`) e no **EAS** antes de gerar builds.
+3. Em *Authentication → Email Templates*, configurar **"Reset password"** com o deep link `kambago://reset-password?token={{ .Token }}&type=recovery` para recuperação de palavra-passe por link.
+4. Configurar **SMTP próprio** no Supabase, para não depender do limite do e-mail de teste padrão.
+5. Aplicar as migrations `001` a `007` por ordem (`001_stage1_auth_profiles.sql` até `007_shared_mobility.sql`) e, apenas em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
+6. Criar o primeiro administrador via SQL Editor (`role = 'admin'` e `account_status = 'ativa'`).
+7. Configurar `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` no `.env` local (nunca versionar `.env`) e no **EAS** antes de gerar builds.
 
 ### Redirecionamento de recuperação de senha
 
