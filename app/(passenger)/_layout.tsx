@@ -6,8 +6,8 @@ export default function PassengerLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: KAMBAGO_COLORS.tealDark,
-        tabBarInactiveTintColor: KAMBAGO_COLORS.textMuted,
+        tabBarActiveTintColor: KAMBAGO_COLORS.primaryDark,
+        tabBarInactiveTintColor: KAMBAGO_COLORS.textSecondary,
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Início' }} />

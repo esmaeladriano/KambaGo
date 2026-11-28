@@ -75,13 +75,13 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background },
   content: { padding: 20, gap: 14 },
-  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.textPrimary },
   card: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 16, padding: 16, gap: 8 },
-  badge: { fontSize: 12, fontWeight: '700', color: KAMBAGO_COLORS.amberText },
-  label: { fontSize: 16, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  badge: { fontSize: 12, fontWeight: '700', color: KAMBAGO_COLORS.warning },
+  label: { fontSize: 16, fontWeight: '700', color: KAMBAGO_COLORS.textPrimary },
   body: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary, lineHeight: 20 },
   linkButton: { paddingVertical: 14 },
-  linkText: { color: KAMBAGO_COLORS.tealDark, fontWeight: '600', fontSize: 15 },
+  linkText: { color: KAMBAGO_COLORS.primaryDark, fontWeight: '600', fontSize: 15 },
   logoutButton: {
     marginTop: 8,
     paddingVertical: 14,

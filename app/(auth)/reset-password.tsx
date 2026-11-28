@@ -178,7 +178,7 @@ export default function ResetPasswordScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background, padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.textPrimary },
   subtitle: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary },
   input: {
     backgroundColor: '#FFFFFF',
@@ -189,13 +189,13 @@ const styles = StyleSheet.create({
   },
   error: { color: KAMBAGO_COLORS.danger, fontSize: 13 },
   feedback: {
-    backgroundColor: KAMBAGO_COLORS.amberSurface,
-    color: KAMBAGO_COLORS.amberText,
+    backgroundColor: KAMBAGO_COLORS.warningSurface,
+    color: KAMBAGO_COLORS.warning,
     padding: 12,
     borderRadius: 10,
   },
   button: {
-    backgroundColor: KAMBAGO_COLORS.teal,
+    backgroundColor: KAMBAGO_COLORS.primary,
     paddingVertical: 15,
     borderRadius: 14,
     alignItems: 'center',

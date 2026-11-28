@@ -26,19 +26,6 @@ export const KAMBAGO_COLORS = {
   accent: '#E53935',
 };
 
-// Aliases de compatibilidade com nomes anteriores (não usar em novo código)
-// Preencher aliases para evitar quebrar código existente
-Object.assign(KAMBAGO_COLORS, {
-  navy: '#191919',
-  navyLight: '#333333',
-  teal: '#E53935',
-  tealDark: '#C62828',
-  amber: '#E53935',
-  amberText: '#C62828',
-  amberSurface: '#FFF0F0',
-  textMuted: '#747474',
-});
-
 export const KAMBAGO_RADIUS = {
   sm: 8,
   md: 12,

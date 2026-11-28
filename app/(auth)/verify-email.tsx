@@ -209,7 +209,7 @@ export default function VerifyEmailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background, padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.textPrimary },
   subtitle: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary },
   input: {
     backgroundColor: '#FFFFFF',
@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
   },
   error: { color: KAMBAGO_COLORS.danger, fontSize: 13 },
   feedback: {
-    backgroundColor: KAMBAGO_COLORS.amberSurface,
-    color: KAMBAGO_COLORS.amberText,
+    backgroundColor: KAMBAGO_COLORS.warningSurface,
+    color: KAMBAGO_COLORS.warning,
     padding: 12,
     borderRadius: 10,
   },
@@ -237,26 +237,26 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   emailLabel: {
-    color: KAMBAGO_COLORS.textMuted,
+    color: KAMBAGO_COLORS.textSecondary,
     fontSize: 12,
   },
   emailText: {
-    color: KAMBAGO_COLORS.navy,
+    color: KAMBAGO_COLORS.textPrimary,
     fontSize: 15,
     fontWeight: '700',
     marginTop: 3,
   },
   editEmail: {
-    color: KAMBAGO_COLORS.tealDark,
+    color: KAMBAGO_COLORS.primaryDark,
     fontWeight: '700',
     marginTop: 8,
   },
   button: {
-    backgroundColor: KAMBAGO_COLORS.teal,
+    backgroundColor: KAMBAGO_COLORS.primary,
     paddingVertical: 15,
     borderRadius: 14,
     alignItems: 'center',
   },
   buttonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
-  link: { color: KAMBAGO_COLORS.navy, fontWeight: '600', textAlign: 'center', marginTop: 8 },
+  link: { color: KAMBAGO_COLORS.textPrimary, fontWeight: '600', textAlign: 'center', marginTop: 8 },
 });

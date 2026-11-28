@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as Linking from 'expo-linking';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '../../utils/validation';
@@ -15,7 +16,8 @@ export default function ForgotPasswordScreen() {
   });
 
   const onSubmit = async (values: ForgotPasswordFormValues) => {
-    const res = await requestPasswordReset(values.email);
+    const redirectTo = Linking.createURL('reset-password');
+    const res = await requestPasswordReset(values.email, redirectTo);
     setFeedback(res.message);
   };
 
@@ -50,11 +52,11 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background, padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.textPrimary },
   subtitle: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary },
   input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 12, padding: 14 },
   error: { color: KAMBAGO_COLORS.danger, fontSize: 13 },
-  feedback: { backgroundColor: KAMBAGO_COLORS.amberSurface, color: KAMBAGO_COLORS.amberText, padding: 12, borderRadius: 10 },
-  button: { backgroundColor: KAMBAGO_COLORS.teal, paddingVertical: 15, borderRadius: 14, alignItems: 'center' },
+  feedback: { backgroundColor: KAMBAGO_COLORS.warningSurface, color: KAMBAGO_COLORS.warning, padding: 12, borderRadius: 10 },
+  button: { backgroundColor: KAMBAGO_COLORS.primary, paddingVertical: 15, borderRadius: 14, alignItems: 'center' },
   buttonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
 });

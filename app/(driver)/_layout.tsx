@@ -6,8 +6,8 @@ export default function DriverLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: KAMBAGO_COLORS.amber,
-        tabBarInactiveTintColor: KAMBAGO_COLORS.textMuted,
+        tabBarActiveTintColor: KAMBAGO_COLORS.accent,
+        tabBarInactiveTintColor: KAMBAGO_COLORS.textSecondary,
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Início' }} />

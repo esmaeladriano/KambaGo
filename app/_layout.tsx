@@ -31,7 +31,7 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: KAMBAGO_COLORS.navy },
+          headerStyle: { backgroundColor: KAMBAGO_COLORS.primary },
           headerTintColor: '#FFFFFF',
           contentStyle: { backgroundColor: KAMBAGO_COLORS.background },
         }}

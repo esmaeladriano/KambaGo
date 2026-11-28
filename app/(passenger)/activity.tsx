@@ -12,6 +12,6 @@ export default function PassengerActivityScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background, padding: 20, gap: 10 },
-  title: { fontSize: 22, fontWeight: '800', color: KAMBAGO_COLORS.navy },
+  title: { fontSize: 22, fontWeight: '800', color: KAMBAGO_COLORS.textPrimary },
   body: { color: KAMBAGO_COLORS.textSecondary, lineHeight: 20 },
 });

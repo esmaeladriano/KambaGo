@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     height: 150,
   },
   brand: {
-    color: KAMBAGO_COLORS.navy,
+    color: KAMBAGO_COLORS.textPrimary,
     fontSize: 38,
     fontWeight: '800',
     marginTop: 8,

@@ -20,9 +20,9 @@ export default function PrivacyLegalScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background },
   content: { padding: 20, gap: 16 },
-  draftNotice: { backgroundColor: KAMBAGO_COLORS.amberSurface, color: KAMBAGO_COLORS.amberText, padding: 12, borderRadius: 12, fontWeight: '600' },
-  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  draftNotice: { backgroundColor: KAMBAGO_COLORS.warningSurface, color: KAMBAGO_COLORS.warning, padding: 12, borderRadius: 12, fontWeight: '600' },
+  title: { fontSize: 22, fontWeight: '700', color: KAMBAGO_COLORS.textPrimary },
   section: { gap: 6 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: KAMBAGO_COLORS.navy },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: KAMBAGO_COLORS.textPrimary },
   sectionBody: { fontSize: 14, color: KAMBAGO_COLORS.textSecondary, lineHeight: 21 },
 });

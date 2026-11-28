@@ -53,11 +53,11 @@ export default function DriverEarningsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background, padding: 20, gap: 14 },
-  title: { fontSize: 22, fontWeight: '800', color: KAMBAGO_COLORS.navy },
+  title: { fontSize: 22, fontWeight: '800', color: KAMBAGO_COLORS.textPrimary },
   card: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 16, padding: 20 },
   statRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 16 },
   statItem: { flex: 1, minWidth: 90, backgroundColor: KAMBAGO_COLORS.surfaceMuted, borderRadius: 12, padding: 12, gap: 6 },
-  statValue: { color: KAMBAGO_COLORS.navy, fontSize: 20, fontWeight: '800' },
+  statValue: { color: KAMBAGO_COLORS.textPrimary, fontSize: 20, fontWeight: '800' },
   statLabel: { color: KAMBAGO_COLORS.textSecondary, fontSize: 12 },
   body: { color: KAMBAGO_COLORS.textSecondary, marginTop: 8 },
 });

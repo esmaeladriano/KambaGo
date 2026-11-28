@@ -57,11 +57,11 @@ export default function PassengerTripsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: KAMBAGO_COLORS.background },
   content: { padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: '800', color: KAMBAGO_COLORS.navy },
+  title: { fontSize: 22, fontWeight: '800', color: KAMBAGO_COLORS.textPrimary },
   body: { color: KAMBAGO_COLORS.textSecondary, lineHeight: 20 },
   feedback: { color: KAMBAGO_COLORS.danger, lineHeight: 20 },
   card: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KAMBAGO_COLORS.border, borderRadius: 14, padding: 14, gap: 8 },
-  name: { color: KAMBAGO_COLORS.navy, fontWeight: '700' },
+  name: { color: KAMBAGO_COLORS.textPrimary, fontWeight: '700' },
   cancel: { alignSelf: 'flex-start', backgroundColor: KAMBAGO_COLORS.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
   cancelText: { color: '#FFFFFF', fontWeight: '700' },
 });

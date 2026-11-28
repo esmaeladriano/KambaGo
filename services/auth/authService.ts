@@ -234,7 +234,8 @@ export async function loginUserWithClient(
 }
 
 export async function requestPasswordReset(
-  email: string
+  email: string,
+  redirectTo: string
 ): Promise<AuthActionResult> {
   const supabase = resolveAuthClient();
   if (!supabase) {
@@ -245,12 +246,13 @@ export async function requestPasswordReset(
     };
   }
 
-  return requestPasswordResetWithClient(supabase, email);
+  return requestPasswordResetWithClient(supabase, email, redirectTo);
 }
 
 export async function requestPasswordResetWithClient(
   supabase: SupabaseAuthLike,
-  email: string
+  email: string,
+  redirectTo: string
 ): Promise<AuthActionResult> {
   const trimmedEmail = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
@@ -260,9 +262,6 @@ export async function requestPasswordResetWithClient(
       message: ptAO.validation.emailInvalid,
     };
   }
-
-  const { createURL } = await import('expo-linking');
-  const redirectTo = createURL('reset-password');
 
   const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
     redirectTo,

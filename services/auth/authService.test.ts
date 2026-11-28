@@ -579,10 +579,14 @@ test('mapDbProfileToUserProfile maps snake_case database rows accurately includi
   assert.equal(mapped.avatarSignedUrl, 'https://signed.example.local/avatar.jpg');
 });
 
-test('requestPasswordReset envia redirectTo gerado por Linking.createURL', async () => {
+test('requestPasswordReset envia redirectTo recebido por parâmetro', async () => {
   const capturedCalls = { rpcNames: [] as string[] };
   const client = makeMockSupabaseClient({ capturedCalls });
-  const res = await requestPasswordResetWithClient(client, 'joana@kambago.ao');
+  const res = await requestPasswordResetWithClient(
+    client,
+    'joana@kambago.ao',
+    'kambago://reset-password'
+  );
 
   assert.equal(res.ok, true);
   assert.equal(res.status, 'success');
@@ -590,18 +594,22 @@ test('requestPasswordReset envia redirectTo gerado por Linking.createURL', async
 
   const args = (capturedCalls as { resetPasswordArgs?: { email: string; options: { redirectTo: string } } }).resetPasswordArgs;
   assert.equal(args?.email, 'joana@kambago.ao');
-  assert.equal(typeof args?.options.redirectTo, 'string');
-  assert.equal(args?.options.redirectTo.startsWith('kambago://reset-password'), true);
+  assert.equal(args?.options.redirectTo, 'kambago://reset-password');
 });
 
 test('requestPasswordReset devolve resposta igual para e-mail existente e inexistente', async () => {
   const existingClient = makeMockSupabaseClient({});
-  const existingRes = await requestPasswordResetWithClient(existingClient, 'joana@kambago.ao');
+  const existingRes = await requestPasswordResetWithClient(
+    existingClient,
+    'joana@kambago.ao',
+    'kambago://reset-password'
+  );
 
   const nonExistingClient = makeMockSupabaseClient({});
   const nonExistingRes = await requestPasswordResetWithClient(
     nonExistingClient,
-    'naoexiste@kambago.ao'
+    'naoexiste@kambago.ao',
+    'kambago://reset-password'
   );
 
   assert.equal(existingRes.ok, nonExistingRes.ok);
@@ -614,13 +622,17 @@ test('requestPasswordReset recusa e-mail inválido sem chamar o Supabase', async
   const capturedCalls = { rpcNames: [] as string[] };
   const client = makeMockSupabaseClient({ capturedCalls });
 
-  const invalidRes = await requestPasswordResetWithClient(client, 'email-invalido');
+  const invalidRes = await requestPasswordResetWithClient(
+    client,
+    'email-invalido',
+    'kambago://reset-password'
+  );
   assert.equal(invalidRes.ok, false);
   assert.equal(invalidRes.status, 'validation_error');
   assert.equal(invalidRes.message, ptAO.validation.emailInvalid);
   assert.equal((capturedCalls as { resetPasswordArgs?: unknown }).resetPasswordArgs, undefined);
 
-  const emptyRes = await requestPasswordResetWithClient(client, '');
+  const emptyRes = await requestPasswordResetWithClient(client, '', 'kambago://reset-password');
   assert.equal(emptyRes.ok, false);
   assert.equal(emptyRes.status, 'validation_error');
   assert.equal((capturedCalls as { resetPasswordArgs?: unknown }).resetPasswordArgs, undefined);
