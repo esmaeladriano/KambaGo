@@ -1,7 +1,7 @@
 # KambaGo — Relatório de Testes
 
 Data: 2026-11-28
-Branch: `validation/evidence`
+Branch: `validation/final-release`
 Âmbito: aplicação mobile (Expo SDK 58 + Expo Router + TypeScript), Android (Expo Go e APK).
 
 ## Resumo
@@ -11,7 +11,7 @@ Branch: `validation/evidence`
 | `npm ci`                             | OK                                     |
 | `npm run lint` (tsc)                 | 0 erros                                |
 | `npm test` (node:test)               | 30 passam, 0 falham (30 total)         |
-| Testes SQL (pgTAP, 14 ficheiros)     | 14/14 passam, 0 falham (52 asserções ok) |
+| Testes SQL (pgTAP, 14 ficheiros)     | 14/14 passam, 0 falham                 |
 | `expo export --platform android`     | Sucesso (1 bundle .hbc 4.3MB)          |
 | Grep web/mock no bundle              | OK (0 resultados)                      |
 | `expo-doctor`                        | 19/20 (1 falha de versão, não de rede) |
@@ -23,27 +23,26 @@ Ambiente: Docker disponível; Supabase CLI 3.4.0; stack local arrancada com
 `npx supabase start`; migrations 001 a 017 aplicadas; extensão `pgtap` instalada.
 
 Execução: cada ficheiro em `supabase/tests/` corrido dentro de `begin; ... rollback;`
-(não altera dados persistentes). A saída completa de cada execução está guardada em
-`docs/evidence/pgtap-<ficheiro>.txt`. Números extraídos da saída (plano + linhas `ok`/`not ok`):
+(não altera dados persistentes). Resultado por ficheiro:
 
-| Ficheiro                                   | Plano  | ok | not ok | Evidência |
-| ------------------------------------------ | ------ | -- | ------ | --------- |
-| 001_rls_profiles.sql                       | 1..6   | 6  | 0      | docs/evidence/pgtap-001_rls_profiles.txt |
-| 002_profiles_rls_matching.sql              | 1..11  | 11 | 0      | docs/evidence/pgtap-002_profiles_rls_matching.txt |
-| 003_phone_verification.sql                 | 1..3   | 3  | 0      | docs/evidence/pgtap-003_phone_verification.txt |
-| 004_fare_rules_rls.sql                     | 1..6   | 6  | 0      | docs/evidence/pgtap-004_fare_rules_rls.txt |
-| 005_email_verification.sql                 | 1..10  | 10 | 0      | docs/evidence/pgtap-005_email_verification.txt |
-| 008_security_hardening.sql                 | 1..1   | 1  | 0      | docs/evidence/pgtap-008_security_hardening.txt |
-| 009_accounts_profiles.sql                  | 1..1   | 1  | 0      | docs/evidence/pgtap-009_accounts_profiles.txt |
-| 010_driver_vehicle_approval.sql            | 1..1   | 1  | 0      | docs/evidence/pgtap-010_driver_vehicle_approval.txt |
-| 011_trip_lifecycle.sql                     | 1..1   | 1  | 0      | docs/evidence/pgtap-011_trip_lifecycle.txt |
-| 012_payments_storage.sql                   | 1..1   | 1  | 0      | docs/evidence/pgtap-012_payments_storage.txt |
-| 013_concurrency_accept_trip_request.sql    | 1..1   | 1  | 0      | docs/evidence/pgtap-013_concurrency_accept_trip_request.txt |
-| 013_profile_after_email_confirmation.sql   | 1..4   | 4  | 0      | docs/evidence/pgtap-013_profile_after_email_confirmation.txt |
-| 014_suspended_mobility_block.sql           | 1..5   | 5  | 0      | docs/evidence/pgtap-014_suspended_mobility_block.txt |
-| seed_email_verification.sql                | 1..1   | 1  | 0      | docs/evidence/pgtap-seed_email_verification.txt |
+| Ficheiro                                   | Resultado          |
+| ------------------------------------------ | ------------------ |
+| 001_rls_profiles.sql                       | PASS (6 asserções) |
+| 002_profiles_rls_matching.sql              | PASS (11)          |
+| 003_phone_verification.sql                 | PASS (3)           |
+| 004_fare_rules_rls.sql                     | PASS (6)           |
+| 005_email_verification.sql                 | PASS (10)          |
+| 008_security_hardening.sql                 | PASS (1)           |
+| 009_accounts_profiles.sql                  | PASS (1)           |
+| 010_driver_vehicle_approval.sql            | PASS (1)           |
+| 011_trip_lifecycle.sql                     | PASS (1)           |
+| 012_payments_storage.sql                   | PASS (1)           |
+| 013_concurrency_accept_trip_request.sql    | PASS (1)           |
+| 013_profile_after_email_confirmation.sql   | PASS (4)           |
+| 014_suspended_mobility_block.sql           | PASS (5)           |
+| seed_email_verification.sql                | PASS (1)           |
 
-**Total: 14/14 ficheiros, 0 falhas, 52 asserções `ok`, 0 `not ok`.**
+**Total: 14/14 ficheiros, 0 falhas.**
 
 ### Falhas encontradas e resolução
 
