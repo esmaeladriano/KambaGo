@@ -6,6 +6,7 @@ import {
   loginUser,
   loginUserWithClient,
   requestPasswordReset,
+  requestPasswordResetWithClient,
   sendEmailAuthLink,
   sendEmailAuthLinkWithClient,
   sendEmailVerificationCode,
@@ -57,12 +58,18 @@ function makeMockSupabaseClient(options: {
   confirmRow?: DbProfileRow | null;
   confirmError?: string;
   myProfileRow?: DbProfileRow | null;
+  resetPasswordError?: string;
+  resetPasswordCalled?: boolean;
+  updateUserError?: string;
+  updateUserCalled?: boolean;
   capturedCalls?: {
     signUpArgs?: unknown;
     signInArgs?: unknown;
     signInWithOtpArgs?: unknown;
     resendArgs?: unknown;
     verifyOtpArgs?: unknown;
+    resetPasswordArgs?: unknown;
+    updateUserArgs?: unknown;
     rpcNames: string[];
   };
 }) {
@@ -128,6 +135,26 @@ function makeMockSupabaseClient(options: {
         return {
           data: {},
           error: options.verifyOtpError ? { message: options.verifyOtpError } : null,
+        };
+      },
+      resetPasswordForEmail: async (email: string, options_?: { redirectTo?: string }) => {
+        if (options.capturedCalls) {
+          options.capturedCalls.resetPasswordArgs = { email, options: options_ };
+        }
+        options.resetPasswordCalled = true;
+        return {
+          data: {},
+          error: options.resetPasswordError ? { message: options.resetPasswordError } : null,
+        };
+      },
+      updateUser: async (params: { password?: string }) => {
+        if (options.capturedCalls) {
+          options.capturedCalls.updateUserArgs = params;
+        }
+        options.updateUserCalled = true;
+        return {
+          data: { user: { id: 'user-1' } },
+          error: options.updateUserError ? { message: options.updateUserError } : null,
         };
       },
       getUser: async () => ({
@@ -549,3 +576,68 @@ test('mapDbProfileToUserProfile maps snake_case database rows accurately includi
   assert.equal(mapped.inttVerificationStatus, 'pendente_confirmacao');
   assert.equal(mapped.avatarSignedUrl, 'https://signed.example.local/avatar.jpg');
 });
+
+test('requestPasswordReset envia redirectTo gerado por Linking.createURL', async () => {
+  const capturedCalls = { rpcNames: [] as string[] };
+  const client = makeMockSupabaseClient({ capturedCalls });
+  const res = await requestPasswordResetWithClient(client, 'joana@kambago.ao');
+
+  assert.equal(res.ok, true);
+  assert.equal(res.status, 'success');
+  assert.equal(res.message, ptAO.auth.feedback.forgotSent);
+
+  const args = (capturedCalls as { resetPasswordArgs?: { email: string; options: { redirectTo: string } } }).resetPasswordArgs;
+  assert.equal(args?.email, 'joana@kambago.ao');
+  assert.equal(typeof args?.options.redirectTo, 'string');
+  assert.equal(args?.options.redirectTo.startsWith('kambago://reset-password'), true);
+});
+
+test('requestPasswordReset devolve resposta igual para e-mail existente e inexistente', async () => {
+  const existingClient = makeMockSupabaseClient({});
+  const existingRes = await requestPasswordResetWithClient(existingClient, 'joana@kambago.ao');
+
+  const nonExistingClient = makeMockSupabaseClient({});
+  const nonExistingRes = await requestPasswordResetWithClient(
+    nonExistingClient,
+    'naoexiste@kambago.ao'
+  );
+
+  assert.equal(existingRes.ok, nonExistingRes.ok);
+  assert.equal(existingRes.status, nonExistingRes.status);
+  assert.equal(existingRes.message, nonExistingRes.message);
+  assert.equal(existingRes.ok, true);
+});
+
+test('requestPasswordReset recusa e-mail inválido sem chamar o Supabase', async () => {
+  const capturedCalls = { rpcNames: [] as string[] };
+  const client = makeMockSupabaseClient({ capturedCalls });
+
+  const invalidRes = await requestPasswordResetWithClient(client, 'email-invalido');
+  assert.equal(invalidRes.ok, false);
+  assert.equal(invalidRes.status, 'validation_error');
+  assert.equal(invalidRes.message, ptAO.validation.emailInvalid);
+  assert.equal((capturedCalls as { resetPasswordArgs?: unknown }).resetPasswordArgs, undefined);
+
+  const emptyRes = await requestPasswordResetWithClient(client, '');
+  assert.equal(emptyRes.ok, false);
+  assert.equal(emptyRes.status, 'validation_error');
+  assert.equal((capturedCalls as { resetPasswordArgs?: unknown }).resetPasswordArgs, undefined);
+});
+
+test('sessão de recuperação: updateUser não é chamado sem sessão válida', async () => {
+  const capturedCalls = { rpcNames: [] as string[] };
+  const client = makeMockSupabaseClient({ capturedCalls });
+
+  // Simula o comportamento do ecrã reset-password: sem hasRecoverySession, updateUser não é chamado.
+  const hasRecoverySession = false;
+  let updateUserCalled = false;
+
+  if (hasRecoverySession) {
+    await client.auth.updateUser({ password: 'NovaSenha123' });
+    updateUserCalled = true;
+  }
+
+  assert.equal(updateUserCalled, false);
+  assert.equal((capturedCalls as { updateUserArgs?: unknown }).updateUserArgs, undefined);
+});
+

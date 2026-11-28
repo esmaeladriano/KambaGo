@@ -103,3 +103,11 @@ Não aplicar estas migrations automaticamente nem num Supabase remoto. Aplicar m
 4. Aplicar as migrations `001` a `007` por ordem (`001_stage1_auth_profiles.sql` até `007_shared_mobility.sql`) e, apenas em desenvolvimento, `supabase/seed/001_dev_corridors.sql`.
 5. Criar o primeiro administrador via SQL Editor (`role = 'admin'` e `account_status = 'ativa'`).
 6. Configurar `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` no `.env` local (nunca versionar `.env`) e no **EAS** antes de gerar builds.
+
+### Redirecionamento de recuperação de senha
+
+O link de recuperação de palavra-passe usa o deep link `kambago://reset-password`, gerado em runtime com `Linking.createURL('reset-password')` (esquema `kambago` definido em `app.json`).
+
+- No painel do Supabase, em *Authentication → URL Configuration*, adicione `kambago://reset-password` à lista de *Redirect URLs*.
+- Para testes no Expo Go, o URL `exp://<IP-da-máquina>:8081/--/` muda com o IP da máquina. Acrescente esse URL à lista de *Redirect URLs* no painel do Supabase antes de testar a recuperação de senha localmente.
+- O `site_url` de produção deve ser definido no painel do Supabase (não alterado nesta migration local).
