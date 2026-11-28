@@ -1,4 +1,5 @@
 import { ScrollView, View, Text, Pressable, Switch, StyleSheet } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
@@ -60,6 +61,7 @@ export default function ProfileScreen() {
         style={styles.logoutButton}
         onPress={async () => {
           await signOutUser();
+          await SecureStore.deleteItemAsync('kambago_pending_verification_email');
           useAuthStore.getState().setProfile(null);
           router.replace('/(auth)/welcome');
         }}

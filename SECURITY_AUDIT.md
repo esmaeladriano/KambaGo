@@ -4,6 +4,7 @@
 
 - A autenticação simulada foi removida. Sem Supabase, nenhuma operação cria sessão.
 - As migrations 009 a 012 estão preparadas, mas não foram aplicadas num Supabase remoto.
+- Migration 014 preparada (não aplicada remota): bloqueia `start_trip`, `complete_trip` e `cancel_trip` quando `account_status = 'suspensa'`.
 - Migrations 001 a 008 não foram substituídas nem modificadas; apenas o teste SQL 004 foi corrigido.
 
 ## Controlo de privilégios

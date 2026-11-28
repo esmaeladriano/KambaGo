@@ -249,8 +249,8 @@ export default function RegisterScreen() {
         <RNText style={styles.buttonText}>{ptAO.auth.actions.submitRegister}</RNText>
       </RNPressable>
 
-      <RNPressable onPress={() => router.push('/(auth)/verify-email')}>
-        <RNText style={styles.link}>{ptAO.auth.actions.verifyEmailLink}</RNText>
+      <RNPressable onPress={() => router.push('/(auth)/login')}>
+        <RNText style={styles.link}>Já tens conta? Entrar</RNText>
       </RNPressable>
     </RNScrollView>
   );

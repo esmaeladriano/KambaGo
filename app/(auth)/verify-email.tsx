@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { KAMBAGO_COLORS } from '../../constants/theme';
 import { ptAO } from '../../locales/pt-AO';
 import {
@@ -15,18 +16,22 @@ import {
 } from '../../services/auth/authService';
 import { useAuthStore } from '../../store/useAuthStore';
 
+const PENDING_EMAIL_STORAGE_KEY = 'kambago_pending_verification_email';
+
 export default function VerifyEmailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ email?: string }>();
   const emailFromRoute =
     typeof params.email === 'string' ? params.email.trim().toLowerCase() : '';
-  const pendingVerificationEmail = useAuthStore((s) => s.pendingVerificationEmail);
   const setPendingVerificationEmail = useAuthStore((s) => s.setPendingVerificationEmail);
   const setProfile = useAuthStore((s) => s.setProfile);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [verified, setVerified] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(60);
+  const [email, setEmail] = useState('');
+  const [hasEmail, setHasEmail] = useState(false);
+
   const {
     control,
     handleSubmit,
@@ -36,16 +41,36 @@ export default function VerifyEmailScreen() {
   } = useForm<EmailVerificationFormValues>({
     resolver: zodResolver(emailVerificationSchema),
     defaultValues: {
-      email: emailFromRoute || pendingVerificationEmail || '',
+      email: '',
       code: '',
     },
   });
   const code = watch('code');
 
   useEffect(() => {
-    if (emailFromRoute) {
-      setPendingVerificationEmail(emailFromRoute);
-    }
+    let mounted = true;
+    const resolveEmail = async () => {
+      const routeEmail = emailFromRoute || '';
+      if (routeEmail) {
+        setEmail(routeEmail);
+        setHasEmail(true);
+        await setPendingVerificationEmail(routeEmail);
+        await SecureStore.setItemAsync(PENDING_EMAIL_STORAGE_KEY, routeEmail);
+        return;
+      }
+      const stored = await SecureStore.getItemAsync(PENDING_EMAIL_STORAGE_KEY);
+      if (stored && mounted) {
+        setEmail(stored);
+        setHasEmail(true);
+        await setPendingVerificationEmail(stored);
+      } else if (mounted) {
+        setHasEmail(false);
+      }
+    };
+    void resolveEmail();
+    return () => {
+      mounted = false;
+    };
   }, [emailFromRoute, setPendingVerificationEmail]);
 
   useEffect(() => {
@@ -56,13 +81,19 @@ export default function VerifyEmailScreen() {
     return () => clearInterval(timer);
   }, [resendSeconds]);
 
+  const clearPendingEmail = async () => {
+    await SecureStore.deleteItemAsync(PENDING_EMAIL_STORAGE_KEY);
+    await setPendingVerificationEmail('');
+  };
+
   const onSubmit = async (values: EmailVerificationFormValues) => {
-    const res = await verifyEmailCode(values);
+    const res = await verifyEmailCode({ email, code: values.code });
     setFeedback(res.message);
     if (res.ok && res.data) {
       const confirmedProfile = res.data;
       setProfile(confirmedProfile);
       setVerified(true);
+      await clearPendingEmail();
       if (confirmedProfile.accountStatus === 'ativa') {
         setTimeout(() => {
           router.replace(
@@ -76,13 +107,31 @@ export default function VerifyEmailScreen() {
   };
 
   const handleResend = async () => {
-    if (resendSeconds > 0) return;
+    if (resendSeconds > 0 || !email) return;
     setIsResending(true);
-    const res = await sendEmailVerificationCode(getValues('email'));
+    const res = await sendEmailVerificationCode(email);
     setFeedback(res.message);
     if (res.ok) setResendSeconds(60);
     setIsResending(false);
   };
+
+  if (!hasEmail) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>{ptAO.auth.verifyEmailTitle}</Text>
+        <Text style={styles.subtitle}>{ptAO.auth.verifyEmailSubtitle}</Text>
+        <Text style={styles.error}>
+          Não encontrámos o e-mail do registo.
+        </Text>
+        <Pressable
+          style={styles.button}
+          onPress={() => router.replace('/(auth)/register')}
+        >
+          <Text style={styles.buttonText}>Voltar ao registo</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -100,9 +149,7 @@ export default function VerifyEmailScreen() {
 
       <View style={styles.emailCard}>
         <Text style={styles.emailLabel}>E-mail utilizado no cadastro</Text>
-        <Text style={styles.emailText}>
-          {emailFromRoute || pendingVerificationEmail || 'E-mail não informado'}
-        </Text>
+        <Text style={styles.emailText}>{email}</Text>
         <Pressable onPress={() => router.replace('/(auth)/register')}>
           <Text style={styles.editEmail}>Corrigir e-mail</Text>
         </Pressable>

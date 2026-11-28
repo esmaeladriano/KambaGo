@@ -112,9 +112,6 @@ export default function LoginScreen() {
         <Text style={styles.link}>{ptAO.auth.actions.forgotLink}</Text>
       </Pressable>
 
-      <Pressable onPress={() => router.push('/(auth)/verify-email')}>
-        <Text style={styles.link}>{ptAO.auth.actions.verifyEmailLink}</Text>
-      </Pressable>
       <Pressable onPress={() => router.push('/(auth)/register')}>
         <Text style={styles.link}>Ainda não tens conta? Criar conta</Text>
       </Pressable>
