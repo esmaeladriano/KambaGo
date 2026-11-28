@@ -1,0 +1,26 @@
+BEGIN
+ plan 
+------
+ 1..3
+(1 row)
+
+                        hasnt_function                        
+--------------------------------------------------------------
+ ok 1 - RPC histórica confirm_phone_verification foi removida
+(1 row)
+
+                            ok                             
+-----------------------------------------------------------
+ ok 2 - Coluna phone_verified permanece durante esta etapa
+(1 row)
+
+                            ok                            
+----------------------------------------------------------
+ ok 3 - Migrations históricas 003/005 permanecem intactas
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

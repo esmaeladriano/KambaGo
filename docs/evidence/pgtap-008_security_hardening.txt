@@ -1,0 +1,22 @@
+BEGIN
+ plan 
+------
+ 1..1
+(1 row)
+
+DO
+                            pass                            
+------------------------------------------------------------
+ ok 1 - Migration 008: verificações de segurança concluídas
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK
+                      resultado                      
+-----------------------------------------------------
+ Migration 008: verificações de segurança concluídas
+(1 row)
+

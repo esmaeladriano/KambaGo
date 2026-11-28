@@ -1,0 +1,37 @@
+BEGIN
+ plan 
+------
+ 1..5
+(1 row)
+
+DO
+                                pass                                
+--------------------------------------------------------------------
+ ok 1 - Motorista suspenso não inicia viagem (start_trip bloqueado)
+(1 row)
+
+                                  pass                                  
+------------------------------------------------------------------------
+ ok 2 - Motorista suspenso não conclui viagem (complete_trip bloqueado)
+(1 row)
+
+                                 pass                                 
+----------------------------------------------------------------------
+ ok 3 - Motorista suspenso não cancela viagem (cancel_trip bloqueado)
+(1 row)
+
+                                  pass                                   
+-------------------------------------------------------------------------
+ ok 4 - Motorista ativo dono da viagem inicia viagem (start_trip aceite)
+(1 row)
+
+                                  pass                                  
+------------------------------------------------------------------------
+ ok 5 - Admin cancela viagem de motorista suspenso (cancel_trip aceite)
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

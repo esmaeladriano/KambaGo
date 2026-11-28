@@ -1,0 +1,32 @@
+BEGIN
+ plan 
+------
+ 1..4
+(1 row)
+
+           has_table           
+-------------------------------
+ ok 1 - Tabela profiles existe
+(1 row)
+
+                     has_trigger                     
+-----------------------------------------------------
+ ok 2 - Trigger cria perfil na confirmação de e-mail
+(1 row)
+
+DO
+                                    ok                                    
+--------------------------------------------------------------------------
+ ok 3 - Não existem perfis operacionais para utilizadores não confirmados
+(1 row)
+
+                       is                        
+-------------------------------------------------
+ ok 4 - Perfil confirmado é criado uma única vez
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

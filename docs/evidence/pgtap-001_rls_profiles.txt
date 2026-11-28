@@ -1,0 +1,41 @@
+BEGIN
+ plan 
+------
+ 1..6
+(1 row)
+
+           has_table           
+-------------------------------
+ ok 1 - Tabela profiles existe
+(1 row)
+
+            has_table            
+---------------------------------
+ ok 2 - Tabela audit_logs existe
+(1 row)
+
+          has_table          
+-----------------------------
+ ok 3 - Tabela routes existe
+(1 row)
+
+                    ok                    
+------------------------------------------
+ ok 4 - RLS está ativa na tabela profiles
+(1 row)
+
+                     ok                     
+--------------------------------------------
+ ok 5 - RLS está ativa na tabela audit_logs
+(1 row)
+
+                   ok                   
+----------------------------------------
+ ok 6 - RLS está ativa na tabela routes
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

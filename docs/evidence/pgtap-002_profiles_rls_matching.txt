@@ -1,0 +1,67 @@
+BEGIN
+ plan  
+-------
+ 1..11
+(1 row)
+
+                       ok                        
+-------------------------------------------------
+ ok 1 - RLS está ativa na tabela public.profiles
+(1 row)
+
+                  has_column                  
+----------------------------------------------
+ ok 2 - Coluna avatar_path existe em profiles
+(1 row)
+
+                       hasnt_column                       
+----------------------------------------------------------
+ ok 3 - Coluna legada avatar_url foi removida de profiles
+(1 row)
+
+           has_function           
+----------------------------------
+ ok 4 - RPC get_my_profile existe
+(1 row)
+
+                    has_function                    
+----------------------------------------------------
+ ok 5 - RPC get_public_profiles_for_matching existe
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 6 - View profile_public_info removida para evitar contorno de RLS
+(1 row)
+
+                                  ok                                  
+----------------------------------------------------------------------
+ ok 7 - Política insegura public_read_profiles não existe em profiles
+(1 row)
+
+DO
+                                 pass                                 
+----------------------------------------------------------------------
+ ok 8 - Utilizador A não lê perfil de Utilizador B em public.profiles
+(1 row)
+
+                                pass                                
+--------------------------------------------------------------------
+ ok 9 - Conta suspensa excluída de get_public_profiles_for_matching
+(1 row)
+
+                       pass                        
+---------------------------------------------------
+ ok 10 - Admin lê todos os perfis sem recursão RLS
+(1 row)
+
+                                         pass                                          
+---------------------------------------------------------------------------------------
+ ok 11 - Utilizador impedido de alterar role, account_status e phone_verified próprios
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

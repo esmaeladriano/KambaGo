@@ -1,0 +1,17 @@
+BEGIN
+ plan 
+------
+ 1..1
+(1 row)
+
+DO
+                                   pass                                   
+--------------------------------------------------------------------------
+ ok 1 - accept_trip_request usa bloqueio FOR UPDATE na viagem e no pedido
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

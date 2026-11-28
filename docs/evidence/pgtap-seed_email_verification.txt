@@ -1,0 +1,17 @@
+BEGIN
+ plan 
+------
+ 1..1
+(1 row)
+
+INSERT 0 2
+                   pass                    
+-------------------------------------------
+ ok 1 - Seed mínimo de utilizadores criado
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

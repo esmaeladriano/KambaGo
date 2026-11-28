@@ -1,0 +1,62 @@
+BEGIN
+ plan  
+-------
+ 1..10
+(1 row)
+
+                 has_function                 
+----------------------------------------------
+ ok 1 - RPC confirm_email_verification existe
+(1 row)
+
+                                   is                                   
+------------------------------------------------------------------------
+ ok 2 - RPC confirm_email_verification não aceita parâmetros do cliente
+(1 row)
+
+                                          is                                           
+---------------------------------------------------------------------------------------
+ ok 3 - Utilizador anónimo não tem permissão execute na RPC confirm_email_verification
+(1 row)
+
+DO
+                                 pass                                 
+----------------------------------------------------------------------
+ ok 4 - Passageiro recém-registado inicia pendente sem email_verified
+(1 row)
+
+                       pass                        
+---------------------------------------------------
+ ok 5 - RPC ativa passageiro confirmado por e-mail
+(1 row)
+
+                                  pass                                  
+------------------------------------------------------------------------
+ ok 6 - Cliente não altera email_verified ou account_status diretamente
+(1 row)
+
+                          pass                          
+--------------------------------------------------------
+ ok 7 - Motorista confirmado por e-mail mantém pendente
+(1 row)
+
+                 pass                  
+---------------------------------------
+ ok 8 - Conta suspensa não é reativada
+(1 row)
+
+                          pass                           
+---------------------------------------------------------
+ ok 9 - E-mail confirmado diferente do perfil é recusado
+(1 row)
+
+                              pass                              
+----------------------------------------------------------------
+ ok 10 - Execução anónima da RPC bloqueada em tempo de execução
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK

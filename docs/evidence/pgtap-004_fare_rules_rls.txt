@@ -1,0 +1,42 @@
+BEGIN
+ plan 
+------
+ 1..6
+(1 row)
+
+            has_table            
+---------------------------------
+ ok 1 - Tabela fare_rules existe
+(1 row)
+
+                     ok                     
+--------------------------------------------
+ ok 2 - RLS está ativa na tabela fare_rules
+(1 row)
+
+DO
+                        pass                        
+----------------------------------------------------
+ ok 3 - Utilizador autenticado lê fare_rules ativas
+(1 row)
+
+                            pass                             
+-------------------------------------------------------------
+ ok 4 - Utilizador comum bloqueado de escrever em fare_rules
+(1 row)
+
+                             pass                             
+--------------------------------------------------------------
+ ok 5 - Admin escreve em fare_rules com registo em audit_logs
+(1 row)
+
+                              pass                              
+----------------------------------------------------------------
+ ok 6 - Políticas admin-only de routes e fare_rules verificadas
+(1 row)
+
+ finish 
+--------
+(0 rows)
+
+ROLLBACK
