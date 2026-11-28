@@ -18,20 +18,23 @@ declare
   v_blocked boolean := false;
   v_status public.trip_status;
 begin
-  -- Cria utilizadores; o trigger cria o perfil após confirmação de e-mail.
-  insert into auth.users (id, email, raw_user_meta_data, email_confirmed_at)
+  -- Cria utilizadores já confirmados (o trigger de confirmação não é necessário aqui;
+  -- inserimos os perfis diretamente com os estados pretendidos).
+  insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
   values
-    (v_suspended, 'suspenso-014@kambago.ao', '{"role":"driver","full_name":"Motorista Suspenso"}'::jsonb, null),
-    (v_active, 'ativo-014@kambago.ao', '{"role":"driver","full_name":"Motorista Ativo"}'::jsonb, null),
-    (v_admin, 'admin-014@kambago.ao', '{"role":"admin","full_name":"Administrador Teste"}'::jsonb, null)
+    (v_suspended, 'suspenso-014@kambago.ao', now(), '{"role":"driver","full_name":"Motorista Suspenso"}'::jsonb),
+    (v_active, 'ativo-014@kambago.ao', now(), '{"role":"driver","full_name":"Motorista Ativo"}'::jsonb),
+    (v_admin, 'admin-014@kambago.ao', now(), '{"role":"admin","full_name":"Administrador Teste"}'::jsonb)
   on conflict (id) do nothing;
 
-  update auth.users set email_confirmed_at = now()
-  where id in (v_suspended, v_active, v_admin);
-
-  update public.profiles set account_status = 'suspensa' where id = v_suspended;
-  update public.profiles set account_status = 'ativa' where id = v_active;
-  update public.profiles set role = 'admin', account_status = 'ativa' where id = v_admin;
+  insert into public.profiles (id, full_name, phone, email, role, account_status, email_verified)
+  values
+    (v_suspended, 'Motorista Suspenso', '+244923001401', 'suspenso-014@kambago.ao', 'driver'::public.user_role, 'suspensa'::public.account_status, true),
+    (v_active, 'Motorista Ativo', '+244923001402', 'ativo-014@kambago.ao', 'driver'::public.user_role, 'ativa'::public.account_status, true),
+    (v_admin, 'Administrador Teste', '+244923001403', 'admin-014@kambago.ao', 'admin'::public.user_role, 'ativa'::public.account_status, true)
+  on conflict (id) do update
+  set account_status = excluded.account_status,
+      role = excluded.role;
 
   -- Viagens de teste (dono = motorista suspenso, exceto a do motorista ativo).
   insert into public.trips (id, driver_id, status, origin_name, destination_name, total_estimated_kz, available_seats)
