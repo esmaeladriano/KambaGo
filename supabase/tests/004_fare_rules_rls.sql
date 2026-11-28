@@ -24,6 +24,10 @@ begin
     (v_admin, '+244923400002', now(), '{"role":"passenger","full_name":"Admin Tarifas"}'::jsonb)
   on conflict (id) do nothing;
 
+  -- O perfil só é criado após confirmação de e-mail (migration 013): dispara o trigger.
+  update auth.users set email_confirmed_at = now()
+  where id in (v_user, v_admin);
+
   update public.profiles set role = 'admin', account_status = 'ativa', phone_verified = true where id = v_admin;
   update public.profiles set account_status = 'ativa', phone_verified = true where id = v_user;
 

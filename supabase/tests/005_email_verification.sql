@@ -36,11 +36,13 @@ begin
     (v_passenger, 'passageiro-teste@kambago.ao', null, '{"role":"passenger","full_name":"Passageiro E-mail"}'::jsonb),
     (v_driver, 'motorista-teste@kambago.ao', null, '{"role":"driver","full_name":"Motorista E-mail"}'::jsonb),
     (v_suspended, 'suspensa-teste@kambago.ao', null, '{"role":"passenger","full_name":"Suspensa E-mail"}'::jsonb),
-    (v_wrong, 'perfil-teste@kambago.ao', now(), '{"role":"passenger","full_name":"E-mail Diferente"}'::jsonb)
+    (v_wrong, 'perfil-teste@kambago.ao', null, '{"role":"passenger","full_name":"E-mail Diferente"}'::jsonb)
   on conflict (id) do nothing;
 
+  -- Confirma o e-mail de v_wrong para que o trigger crie o perfil (migration 013),
+  -- depois altera o e-mail do perfil para simular divergência.
+  update auth.users set email_confirmed_at = now() where id = v_wrong;
   update public.profiles set email = 'outro-teste@kambago.ao' where id = v_wrong;
-  update public.profiles set account_status = 'suspensa' where id = v_suspended;
 
   -- 1. Passageiro recém-registado inicia pendente com email_verified = false
   select * into v_profile from public.profiles where id = v_passenger;
@@ -87,6 +89,8 @@ begin
 
   -- 5. Conta suspensa não é reativada pela RPC
   update auth.users set email_confirmed_at = now() where id = v_suspended;
+  -- O perfil só é criado após confirmação de e-mail (migration 013); suspende-o agora.
+  update public.profiles set account_status = 'suspensa' where id = v_suspended;
   perform set_config('request.jwt.claim.sub', v_suspended::text, true);
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   set local role authenticated;
